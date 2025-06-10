@@ -85,23 +85,17 @@ static QueueHandle_t s_aps_data_indication = NULL;
 
 
 
-static bool esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
+void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
-    if (confirm.status != 0) {
-        return false;
+     if (confirm.status == 0x00) {
+        ESP_LOGI("APSDE CONFIRM",
+                "Sent successfully from endpoint %d, source address 0x%04hx to endpoint %d,"
+                "destination address 0x%04hx",
+                confirm.src_endpoint, esp_zb_get_short_address(), confirm.dst_endpoint, confirm.dst_addr.addr_short);
+        ESP_LOG_BUFFER_CHAR_LEVEL("APSDE CONFIRM", confirm.asdu, confirm.asdu_length, ESP_LOG_INFO);
+    } else {
+        ESP_LOGE("APSDE CONFIRM", "Failed to send APSDE-DATA request, error code: %d", confirm.status);
     }
-
-    uint16_t outlen = sizeof(esp_zb_apsde_data_confirm_t) + confirm.asdu_length;
-
-    if (s_aps_data_confirm == NULL) {
-        s_aps_data_confirm = xQueueCreate(10, outlen);
-    }
-
-    if (s_aps_data_confirm != NULL) {
-        xQueueSend(s_aps_data_confirm, &confirm, portMAX_DELAY);
-        return true;
-    }
-    return false;
 }
 
 
@@ -110,9 +104,9 @@ static bool esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 void create_network_load(uint16_t dest_addr)
 {
     
-    uint8_t value[]= "hello world";
-    uint32_t data_length = 12;
-
+    //uint8_t value[]= "Hello Zigbee!"; // Example payload, can be adjusted as needed
+    uint8_t data_length = 50; // Example payload length, can be adjusted as needed
+   // uint8_t iteratons = 0; // Example iterator, can be adjusted as needed
     esp_zb_apsde_data_req_t req ={
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
         .dst_addr.addr_short = dest_addr,
@@ -121,8 +115,8 @@ void create_network_load(uint16_t dest_addr)
         .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,  // Example cluster ID (On/Off cluster)
         .src_endpoint = 10,                          // Example source endpoint
         .asdu_length = data_length,                 // Example payload length
-        .asdu = value,                              // Example uint8_t array to be sent
-        // .asdu = malloc(data_length * sizeof(uint8_t)), // Allocate memory for ASDU if needed
+        // .asdu = value,                              // Example uint8_t array to be sent
+        .asdu = malloc(data_length * sizeof(uint8_t)), // Allocate memory for ASDU if needed
         .tx_options = 0,                            // Example transmission options
         .use_alias = false,
         .alias_src_addr = 0,
@@ -131,18 +125,21 @@ void create_network_load(uint16_t dest_addr)
     };
 
 
-    uint32_t i=0;
-    while(i<100){
-        if (req.asdu == NULL) {
-            ESP_LOGE(TAG_include, "Failed to allocate memory for ASDU");
-            return;
+    uint8_t i=0;
+    
+    if (req.asdu == NULL) {
+        ESP_LOGE(TAG_include, "Failed to allocate memory for ASDU");
+        return;
+    }else{
+        while(i<data_length){
+            req.asdu[i] = 'h'; // Fill the ASDU with some data, can be adjusted as needed
+            i++;
         }
-
-        esp_zb_lock_acquire(portMAX_DELAY);
-        esp_zb_aps_data_request(&req);
-        esp_zb_lock_release();
-        i++;
     }
+    ESP_LOGI(TAG_include, "Sending APS data request with payload: %s", req.asdu);
+    esp_zb_lock_acquire(portMAX_DELAY);
+    esp_zb_aps_data_request(&req);
+    esp_zb_lock_release();    
 
 }
 
@@ -154,7 +151,6 @@ void button_handler(switch_func_pair_t *button_func_pair)
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
         esp_zigbee_include_show_tables();
         create_network_load(0x0000);
-
     }
     
 }
