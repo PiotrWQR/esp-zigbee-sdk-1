@@ -19,6 +19,16 @@ managed_components/
 managed_components/espressif__esp-zboss-lib/
 managed_components/espressif__esp-zigbee-lib/
 
+examples/esp_zigbee_ncp/
+examples/esp_zigbee_HA_sample/
+examples/esp_zigbee_touchlink/
+examples/esp_zigbee_greenpower/
+examples/esp_zigbee_customized_devices/
+examples/esp_zigbee_all_devices_types_app/
+examples/esp_zigbee_all_devices_types_app2/
+
+
+
 pytest_embedded_log/
 # VS Code Settings
 .vscode/
