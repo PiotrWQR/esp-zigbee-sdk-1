@@ -1,5 +1,5 @@
 Komputer:
 Kordynator: com17
 Routery: com16 com12 
-Urządzenia: com14 com5
+Urządzenia: com14 com5 com19
 
