@@ -40,9 +40,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
                 esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_STEERING);
             } else {
                 ESP_LOGI(TAG, "Device rebooted");
-                //Tu można resetować urządzenie, jeśli jest to wymagane lub właczyć steering
-                //esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_STEERING);
-            }
+                //Tu można resetować urządzenie, jeśli jest to wymagane lub właczyć steering            }
         } else {
             ESP_LOGW(TAG, "%s failed with status: %s, retrying", esp_zb_zdo_signal_to_string(sig_type),
                      esp_err_to_name(err_status));
