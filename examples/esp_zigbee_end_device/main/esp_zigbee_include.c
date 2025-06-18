@@ -84,7 +84,7 @@ static QueueHandle_t s_aps_data_confirm = NULL;
 static QueueHandle_t s_aps_data_indication = NULL;
 
 
-
+//Konfirmacja wysłania danych APS
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
      if (confirm.status == 0x00) {
@@ -93,6 +93,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
                 "destination address 0x%04hx",
                 confirm.src_endpoint, esp_zb_get_short_address(), confirm.dst_endpoint, confirm.dst_addr.addr_short);
         ESP_LOG_BUFFER_CHAR_LEVEL("APSDE CONFIRM", confirm.asdu, confirm.asdu_length, ESP_LOG_INFO);
+        
     } else {
         ESP_LOGE("APSDE CONFIRM", "Failed to send APSDE-DATA request, error code: %d", confirm.status);
     }
@@ -141,6 +142,8 @@ void create_network_load(uint16_t dest_addr)
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();    
 
+
+    free(req.asdu); // Free the allocated memory for ASDU after sending
 }
 
 
