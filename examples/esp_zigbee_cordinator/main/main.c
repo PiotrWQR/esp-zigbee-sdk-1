@@ -8,7 +8,6 @@
 #include "create_endpoints.c"
 
 
-
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
 #endif
@@ -140,7 +139,7 @@ static void esp_zb_task(void *pcParameters)
 {
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
-    esp_zb_enable_distributed_network(false);//TODO: enable distributed network
+        esp_zb_enable_distributed_network(false);
     esp_zb_nwk_set_link_status_period(10);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_core_action_handler_register(zb_action_handler);
@@ -157,7 +156,7 @@ void app_main(void)
     esp_zb_platform_config_t config = {
         .radio_config = ESP_ZB_DEFAULT_RADIO_CONFIG(),
         .host_config = ESP_ZB_DEFAULT_HOST_CONFIG(),
-    };
+        };
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
