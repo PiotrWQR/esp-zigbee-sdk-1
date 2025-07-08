@@ -97,6 +97,9 @@ static esp_err_t deferred_driver_init(void)
 // This function is called when an APSDE-DATA indication is received.
 static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
+    static uint8_t apsde_data_indication_counter = 0;
+    apsde_data_indication_counter++;
+    ESP_LOGI("APSDE INDICATION", "APSDE-DATA indication received, counter: %d", apsde_data_indication_counter);
     bool processed = false;
     if (ind.status == 0x00) {
             if (ind.dst_endpoint == 10 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
@@ -106,7 +109,7 @@ static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
                     ind.dst_addr_mode == 0x01 ? "group" : "unicast", ind.asdu_length, ind.src_endpoint,
                     ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr);
             ESP_LOG_BUFFER_CHAR_LEVEL("APSDE INDICATION", ind.asdu, ind.asdu_length, ESP_LOG_INFO);
-            processed = true;
+                processed = true;
         }
     } else {
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
