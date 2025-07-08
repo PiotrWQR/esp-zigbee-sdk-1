@@ -9,7 +9,7 @@
 #include "esp_zigbee_aps_nwk.c"
 
 
-#if !defined CONFIG_ZB_ZCZR
+#if !defined CONFIG_ZB_ZED
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
 #endif
 
