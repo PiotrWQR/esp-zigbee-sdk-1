@@ -16,12 +16,10 @@ static const char *TAG_include = "esp_zigbee_include";
 static uint32_t byte_counter = 0;
 static uint32_t byte_count = 0;
 
-static QueueHandle_t apsde_data_requests_queue = NULL;
 
 void traffic_reporter_init(){
     byte_counter = 0;
     byte_count = 0;
-    apsde_data_requests_queue = xQueueCreate(20, sizeof(esp_zb_apsde_data_req_t));
     while (1) {
         ESP_LOGI(TAG_include, "Byte count in last 10 seconds: %ld", byte_count);
         vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
@@ -286,14 +284,7 @@ void send_traffic_report(void)
 
 
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        if( neighbor.relationship == ESP_ZB_NWK_RELATIONSHIP_CHILD){
-            esp_zb_apsde_data_req_t req = create_aps_request(neighbor.short_addr, traffic_report_endpoint, traffic_report_endpoint, ESP_ZB_AF_HA_PROFILE_ID,
-                               ESP_ZB_ZCL_CLUSTER_ID_BASIC, (uint8_t *)&traffic_report, sizeof(esp_zb_network_traffic_report_t),
-                               0, false, 0, 0, 3);
-            esp_zb_lock_acquire(portMAX_DELAY);
-            esp_zb_aps_data_request(&req);
-            esp_zb_lock_release();
-        }
+        
     }
 
 }
