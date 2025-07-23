@@ -108,11 +108,32 @@ static void esp_show_route_table()
     }
 }
 
+static void esp_show_route_record_table()
+{
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_route_record_info_t route = {};
+
+    ESP_LOGI(TAG_include, "Zigbee Network Routes Records:");
+    while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route)) {
+        ESP_LOGI(TAG_include,"Index: %3d", itor);
+        ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_address);
+        ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
+        ESP_LOGI(TAG_include, "  Relay: %3d", route.relay_count);
+        ESP_LOGI(TAG_include, "  Path node 1: %3d", route.path[0]);
+        ESP_LOGI(TAG_include, "  Path node 2: %3d", route.path[1]);
+        ESP_LOGI(TAG_include, "  Path node 3: %3d", route.path[2]);
+        ESP_LOGI(TAG_include, "  Path node 4: %3d", route.path[3]);
+        ESP_LOGI(TAG_include, "  Path node 5: %3d", route.path[4]);
+        ESP_LOGI(TAG_include," ");
+    }
+}
+
 void esp_zigbee_include_show_tables(void)
 {
     ESP_LOGI(TAG_include, "Zigbee Network Tables:");
     esp_show_neighbor_table();
     esp_show_route_table();
+    esp_show_route_record_table();
 }
 
 
@@ -154,7 +175,7 @@ static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     return processed;
 }
 
-bool isCongest(uint64_t dest_addr)
+bool isCoordinator(uint64_t dest_addr)
 {
     
     return (dest_addr == 0x0000);
@@ -222,7 +243,7 @@ void create_ping(uint16_t dest_addr)
     }
     ESP_LOGI(TAG_include, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
 
-    if (isCongest(dest_addr)) {
+    if (isCoordinator(dest_addr)) {
         //xQueueAddToSet(apsde_data_requests_queue, &req);
         return;
     }
