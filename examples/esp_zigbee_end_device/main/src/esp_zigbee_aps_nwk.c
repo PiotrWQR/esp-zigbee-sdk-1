@@ -78,7 +78,7 @@ static void esp_show_neighbor_table()
         ESP_LOGI(TAG_include,"  RSSI: %3d", neighbor.rssi);
         ESP_LOGI(TAG_include,"  LQI: %3d", neighbor.lqi);
         ESP_LOGI(TAG_include,"  Cost: o:%d", neighbor.outgoing_cost);
-        
+
         ESP_LOGI(TAG_include," ");
     }
 }

@@ -124,6 +124,7 @@ static void esp_show_route_record_table()
         ESP_LOGI(TAG_include, "  Path node 3: %3d", route.path[2]);
         ESP_LOGI(TAG_include, "  Path node 4: %3d", route.path[3]);
         ESP_LOGI(TAG_include, "  Path node 5: %3d", route.path[4]);
+        ESP_LOGI(TAG_include, "  Address: %ld", (long)&route);
         ESP_LOGI(TAG_include," ");
     }
 }
