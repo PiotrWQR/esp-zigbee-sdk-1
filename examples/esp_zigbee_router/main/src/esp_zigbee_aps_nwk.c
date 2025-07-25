@@ -97,3 +97,27 @@ static bool deferred_driver_init(void)
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized;
 }
+
+int16_t esp_zigbee_get_router_neightbor_count(void)
+{
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_neighbor_info_t neighbor = {};
+    int16_t count = 0;
+
+    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
+        if (neighbor.device_type == ESP_ZB_DEVICE_TYPE_ROUTER) {
+            count++;
+        }
+    }
+    return count;
+}
+
+bool esp_zigbee_check_coordinator_connection(void)
+{
+    if(esp_zb_bdb_dev_joined() == false) {
+        return false;
+    }
+    
+    return false;
+    
+}
