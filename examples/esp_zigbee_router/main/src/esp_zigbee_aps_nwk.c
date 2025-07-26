@@ -112,12 +112,4 @@ int16_t esp_zigbee_get_router_neightbor_count(void)
     return count;
 }
 
-bool esp_zigbee_check_coordinator_connection(void)
-{
-    if(esp_zb_bdb_dev_joined() == false) {
-        return false;
-    }
-    
-    return false;
-    
-}
+bool esp_zigbee_check_coordinator_connection(void);

@@ -100,7 +100,7 @@ static void esp_show_route_table()
         ESP_LOGI(TAG_include, "  Flags: 0x%02x", *(uint8_t *)&route.flags);
         ESP_LOGI(TAG_include," ");
     }
-}
+} 
 
 void esp_zigbee_include_show_tables(void)
 {
