@@ -179,7 +179,7 @@ static void esp_zb_task(void *pcParameters)
 static void action_check(void *pvParameters)
 {
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(10000));
+        vTaskDelay(pdMS_TO_TICKS(18000));
         if (actions_count > 0) {
             ESP_LOGI(TAG, "Actions count: %d", actions_count);
             actions_count = 0;
@@ -203,5 +203,5 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
-    xTaskCreate(action_check, "Zigbee_main", 4096, NULL, 5, NULL);
+    //xTaskCreate(action_check, "Zigbee_main", 4096, NULL, 5, NULL);
 }

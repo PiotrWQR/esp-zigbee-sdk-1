@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include "Helpers.h"
+
 #include "esp_check.h"
 #include "esp_log.h"
 #include "nwk/esp_zigbee_nwk.h"
