@@ -7,8 +7,10 @@
 
 static const char *TAG_include = "esp_zigbee_include";
 
+static uint8_t actions_count = 0;
 static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
+    actions_count++;
     bool processed = false;
     if (ind.status == 0x00) {
             if (ind.dst_endpoint == 10 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
@@ -112,4 +114,3 @@ int16_t esp_zigbee_get_router_neightbor_count(void)
     return count;
 }
 
-bool esp_zigbee_check_coordinator_connection(void);
