@@ -5,9 +5,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_zigbee_secur.h"
-#include "esp_zigbee_aps_nwk.c"
 #include "create_endpoints.c"
-
+#include "Helpers.h"
 
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
@@ -174,7 +173,11 @@ static void esp_zb_task(void *pcParameters)
     ESP_ERROR_CHECK(esp_zb_start(false));
     esp_zb_stack_main_loop();
 }
-
+static void esp_helper_task(void *pvParameters)
+{
+    traffic_reporter_init(pvParameters);
+    vTaskDelete(NULL);
+}
 
 void app_main(void)
 {
@@ -185,5 +188,5 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
-    xTaskCreate(traffic_reporter_init, "zigbee_traffic_reporter", 4096, NULL, 5, NULL);
+    xTaskCreate(esp_helper_task, "zigbee_traffic_reporter", 4096, NULL, 5, NULL);
 }

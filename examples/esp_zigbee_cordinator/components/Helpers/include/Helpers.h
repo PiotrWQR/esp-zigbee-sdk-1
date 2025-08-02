@@ -5,11 +5,17 @@
 #include "esp_zigbee_type.h"
 #include <freertos/queue.h>
 
-static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
-static bool deferred_driver_init();
+bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
+void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
+
+bool deferred_driver_init();
 void esp_zigbee_include_show_tables(void);
 
-static const char *dev_type_name[] = {
+void send_traffic_report(void);
+void refresh_routes(void);
+void traffic_reporter_init(void *pvParameters);
+
+const char *dev_type_name[] = {
     [ESP_ZB_DEVICE_TYPE_COORDINATOR] = "ZC",
     [ESP_ZB_DEVICE_TYPE_ROUTER]      = "ZR",
     [ESP_ZB_DEVICE_TYPE_ED]          = "ZED",
@@ -23,7 +29,7 @@ static const char rel_name[] = {
     [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = 'c', /* Previous Child */
     [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = 'u', /* Unauthenticated Child */
 };
-static const char *route_state_name[] = {
+const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_ACTIVE] = "Active",
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_UNDERWAY] = "Disc",
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED] = "Fail",
@@ -35,6 +41,3 @@ typedef struct esp_zb_network_traffic_report_s {
     //esp_zb_ieee_addr_t priority_node
 } esp_zb_network_traffic_report_t;
 
-
-void send_traffic_report(void);
-void refresh_routes(void);

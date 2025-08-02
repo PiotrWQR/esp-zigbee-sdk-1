@@ -9,7 +9,6 @@
 static void create_test_endpoint(esp_zb_ep_list_t *ep_list);
 
 
-#include "create_endpoints.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "esp_err.h"

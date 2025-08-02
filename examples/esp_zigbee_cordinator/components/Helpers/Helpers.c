@@ -8,7 +8,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_zigbee_core.h"
-#include "esp_zigbee_aps_nwk.h"
 #include "aps/esp_zigbee_aps.h"
 #include <memory.h>
 #include "esp_err.h"
@@ -20,7 +19,7 @@ static uint32_t byte_counter = 0;
 static uint32_t byte_count = 0;
 
 
-void traffic_reporter_init(){
+void traffic_reporter_init(void *pvParameters){
     byte_counter = 0;
     byte_count = 0;
     while (1) {
@@ -162,7 +161,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 }
 
 
-static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
+bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
@@ -275,7 +274,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
     }
 }
 
-static bool deferred_driver_init(void)
+bool deferred_driver_init(void)
 {
     uint8_t button_num = PAIR_SIZE(button_func_pair);
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
