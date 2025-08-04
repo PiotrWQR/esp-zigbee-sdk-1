@@ -1,19 +1,14 @@
-#include "zcl/esp_zigbee_zcl_common.h"
-#include "nwk/esp_zigbee_nwk.h"
+
 #include "aps/esp_zigbee_aps.h"
-#include "esp_zigbee_core.h"
-#include "esp_zigbee_type.h"
-#include <freertos/queue.h>
+#include "nwk/esp_zigbee_nwk.h"
 
-bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
-void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
-
-bool deferred_driver_init();
+static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
+static bool deferred_driver_init(void);
+static void esp_show_neighbor_table();
+static void esp_show_route_table();
 void esp_zigbee_include_show_tables(void);
 
-void send_traffic_report(void);
-void refresh_routes(void);
-void traffic_reporter_init(void *pvParameters);
+
 
 static const char *dev_type_name[] = {
     [ESP_ZB_DEVICE_TYPE_COORDINATOR] = "ZC",
@@ -29,7 +24,6 @@ static const char rel_name[] = {
     [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = 'c', /* Previous Child */
     [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = 'u', /* Unauthenticated Child */
 };
-
 static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_ACTIVE] = "Active",
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_UNDERWAY] = "Disc",
@@ -37,8 +31,12 @@ static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
 
-typedef struct esp_zb_network_traffic_report_s {
-    uint32_t traffic_count; //Bites recieved in last 10 seconds
+typedef struct {
+    uint32_t traffic_count; //Bits received in last 10 seconds
     //esp_zb_ieee_addr_t priority_node
 } esp_zb_network_traffic_report_t;
 
+
+
+void send_traffic_report(void);
+void refresh_routes(void);
