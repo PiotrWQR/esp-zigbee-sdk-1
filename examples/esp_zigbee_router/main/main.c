@@ -5,7 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "platform/esp_zigbee_platform.h"
-#include "esp_zigbee_aps_nwk.c"
+#include "Helpers.h"
 
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
