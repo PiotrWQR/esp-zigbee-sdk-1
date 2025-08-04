@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "Helpers.h"
 
-#include "esp_zigbee_aps_nwk.h"
+
 #include "esp_check.h"
 #include "esp_log.h"
 #include "switch_driver.h"
@@ -62,7 +62,7 @@ void create_ping_64bit(uint64_t dest_addr);
 void create_network_load(uint16_t dest_addr, uint8_t repetitions);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
 //wyświetla sąsiadów
-static void esp_show_neighbor_table()
+void esp_show_neighbor_table()
 {
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -86,7 +86,7 @@ static void esp_show_neighbor_table()
 }
 
 //wyswietla trasy
-static void esp_show_route_table()
+void esp_show_route_table()
 {
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -144,7 +144,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 }
 
 
-static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
+bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
@@ -270,7 +270,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
     }
 }
 
-static bool deferred_driver_init(void)
+bool deferred_driver_init(void)
 {
     uint8_t button_num = PAIR_SIZE(button_func_pair);
 

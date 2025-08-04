@@ -2,10 +2,11 @@
 #include "aps/esp_zigbee_aps.h"
 #include "nwk/esp_zigbee_nwk.h"
 
-static bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
-static bool deferred_driver_init(void);
-static void esp_show_neighbor_table();
-static void esp_show_route_table();
+bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
+void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
+bool deferred_driver_init(void);
+void esp_show_neighbor_table();
+void esp_show_route_table();
 void esp_zigbee_include_show_tables(void);
 
 
@@ -40,3 +41,4 @@ typedef struct {
 
 void send_traffic_report(void);
 void refresh_routes(void);
+void traffic_reporter_init(void);
