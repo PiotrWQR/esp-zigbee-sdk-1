@@ -151,7 +151,6 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_init(&zb_nwk_cfg);
     esp_zb_nvram_erase_at_start(true);
     
-    esp_zb_set_tx_power(20);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
     esp_zb_core_action_handler_register(zb_action_handler);

@@ -163,7 +163,6 @@ static void esp_zb_task(void *pcParameters)
 
     esp_zb_nvram_erase_at_start(true);
 
-    esp_zb_set_tx_power(20);
     esp_zb_core_action_handler_register(zb_action_handler);
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
@@ -183,7 +182,7 @@ static void action_check(void *pvParameters)
         if (actions_count > 0) {
             ESP_LOGI(TAG, "Actions count: %d", actions_count);
             actions_count = 0;
-        } else {
+        } else if(!esp_zb_bdb_dev_joined()) {
             
             ESP_LOGI(TAG, "No actions detected, performing factory reset");
             esp_zb_factory_reset();
@@ -203,5 +202,5 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
-    //xTaskCreate(action_check, "Zigbee_main", 4096, NULL, 5, NULL);
+    xTaskCreate(action_check, "action_check", 4096, NULL, 5, NULL);
 }
