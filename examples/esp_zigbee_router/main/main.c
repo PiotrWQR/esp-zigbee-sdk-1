@@ -183,7 +183,6 @@ static void action_check(void *pvParameters)
             ESP_LOGI(TAG, "Actions count: %d", actions_count);
             actions_count = 0;
         } else if(!esp_zb_bdb_dev_joined()) {
-            
             ESP_LOGI(TAG, "No actions detected, performing factory reset");
             esp_zb_factory_reset();
         }

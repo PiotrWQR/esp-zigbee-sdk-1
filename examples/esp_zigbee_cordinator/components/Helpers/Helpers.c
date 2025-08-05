@@ -28,6 +28,7 @@ void traffic_reporter_init(void *pvParameters){
         byte_count = byte_counter; // Store the current byte count
         byte_counter = 0; // Reset the counter after sending the report
         send_traffic_report();
+        refresh_routes();
     }    
 }
 
@@ -39,7 +40,7 @@ static switch_func_pair_t button_func_pair[] = {
 
 
 //function creating payload and sending it to the destination address
-void create_ping(uint16_t dest_addr);
+void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
 void create_network_load(uint16_t dest_addr, uint8_t repetitions);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
@@ -217,7 +218,7 @@ void create_ping_64(uint64_t dest_addr)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
-void create_ping(uint16_t dest_addr)
+void create_ping(uint16_t dest_addr, bool show_log)
 {
     uint32_t data_length = 50; // Example payload length
     esp_zb_apsde_data_req_t req = {
@@ -244,8 +245,9 @@ void create_ping(uint16_t dest_addr)
             req.asdu[i] = i % 256; // Fill with some data, e.g., incrementing values
         }
     }
+    if(show_log){
     ESP_LOGI(TAG_include, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
-
+    }
     if (isCoordinator(dest_addr)) {
         //xQueueAddToSet(apsde_data_requests_queue, &req);
         return;
@@ -253,7 +255,7 @@ void create_ping(uint16_t dest_addr)
         
 
     esp_zb_lock_acquire(portMAX_DELAY);
-    esp_zb_aps_data_request(&req);
+    ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
     esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
 }
@@ -289,7 +291,7 @@ void refresh_routes(void)
 
     ESP_LOGI(TAG_include, "Refreshing Zigbee Network Routes:");
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
-        create_ping(route.dest_addr);
+        create_ping(route.dest_addr, false);
     }
 }
 
@@ -308,7 +310,7 @@ void send_traffic_report(void)
 
 
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        
+
     }
 
 }

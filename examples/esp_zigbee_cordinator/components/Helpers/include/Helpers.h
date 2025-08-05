@@ -36,9 +36,8 @@ static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED] = "Fail",
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
-
+    
 typedef struct esp_zb_network_traffic_report_s {
     uint32_t traffic_count; //Bites recieved in last 10 seconds
     //esp_zb_ieee_addr_t priority_node
 } esp_zb_network_traffic_report_t;
-
