@@ -254,9 +254,10 @@ void create_ping(uint16_t dest_addr, bool show_log)
     }
         
 
-    esp_zb_lock_acquire(portMAX_DELAY);
-    ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
-    esp_zb_lock_release();
+    if(esp_zb_lock_acquire(portMAX_DELAY)){
+        ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
+        esp_zb_lock_release();
+    }
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
