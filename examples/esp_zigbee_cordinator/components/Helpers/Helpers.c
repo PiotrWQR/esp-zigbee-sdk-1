@@ -206,7 +206,7 @@ void create_ping_64(uint64_t dest_addr)
         .src_endpoint = 10,                                 // Example source endpoint
         .asdu_length = data_length,                         // No payload for ping
         .asdu = malloc(data_length * sizeof(uint8_t)),      // No payload for ping
-        .tx_options = 0,                                    // Example transmission options
+        .tx_options = 0x04,                                    // Example transmission options
         .use_alias = false,
         .alias_src_addr = 0,
         .alias_seq_num = 0,
