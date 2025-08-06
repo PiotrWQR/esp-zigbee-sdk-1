@@ -37,6 +37,13 @@ static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
     
+static const uint8_t aps_address_modes_size[] = {
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 3,
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 9,
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
+};
 typedef struct esp_zb_network_traffic_report_s {
     uint32_t traffic_count; //Bites recieved in last 10 seconds
     //esp_zb_ieee_addr_t priority_node

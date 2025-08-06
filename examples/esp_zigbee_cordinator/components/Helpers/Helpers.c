@@ -18,8 +18,18 @@ static const char *TAG_include = "esp_zigbee_include";
 static uint32_t byte_counter = 0;
 static uint32_t byte_count = 0;
 
+uint16_t request_size(esp_zb_apsde_data_req_t *req) {
+    if (!req) {
+        return 0;
+    }
+    uint16_t size = aps_address_modes_size[req->dst_addr_mode];
 
-void traffic_reporter_init(void *pvParameters){
+    size+= 19; // 19 is the size of the fixed fields in esp_zb_apsde_data_req_t
+    size += req->asdu_length;
+    return size;
+}
+
+void traffic_reporter_init(void *pvParameters) {
     byte_counter = 0;
     byte_count = 0;
     while (1) {
@@ -162,8 +172,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 }
 
 
-bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
-{
+bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     bool processed = false;
     if (ind.status == 0x00) {
         byte_counter += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
@@ -179,9 +188,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     return processed;
 }
 
-bool isCoordinator(uint64_t dest_addr)
-{
-    
+bool isCoordinator(uint16_t dest_addr) { 
     return (dest_addr == 0x0000);
 }
 
@@ -212,6 +219,7 @@ void create_ping_64(uint64_t dest_addr)
     }
 
     ESP_LOGI(TAG_include, "Sending APS data request to 0x%016" PRIx64 " with %ld bytes", dest_addr, data_length);
+    ESP_LOGI(TAG_include, "Size of request: %d", request_size(&req));
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
@@ -230,7 +238,7 @@ void create_ping(uint16_t dest_addr, bool show_log)
         .src_endpoint = 10,                          // Example source endpoint
         .asdu_length = data_length,                  // No payload for ping
         .asdu = malloc(data_length * sizeof(uint8_t)), // Allocate memory for ASDU if needed
-        .tx_options = 0,                            // Example transmission options
+        .tx_options = 0x04,                            // Example transmission options
         .use_alias = false,
         .alias_src_addr = 0,
         .alias_seq_num = 0,
@@ -295,7 +303,6 @@ void refresh_routes(void)
         create_ping(route.dest_addr, false);
     }
 }
-
 
 
 void send_traffic_report(void)

@@ -251,7 +251,6 @@ void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions)
 }
 
 
-
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
@@ -303,7 +302,6 @@ void send_traffic_report(void)
     }
 
 }
-
 
 
 void refresh_routes(void)
