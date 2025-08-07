@@ -285,6 +285,9 @@ void button_handler(switch_func_pair_t *button_func_pair)
     }
 }
 
+
+
+
 bool deferred_driver_init(void)
 {
     uint8_t button_num = PAIR_SIZE(button_func_pair);
