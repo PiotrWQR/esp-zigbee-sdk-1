@@ -9,10 +9,10 @@
 #include "freertos/task.h"
 #include "esp_zigbee_core.h"
 #include "aps/esp_zigbee_aps.h"
+//#include "light_driver.h"
 
 #include <memory.h>
 
-#include "light_driver.h"
 
 static const char *TAG = "esp_zigbee_include";
 
@@ -53,7 +53,7 @@ void traffic_reporter_init(){
         byte_count = byte_counter; // Store the current byte count
         byte_counter = 0; // Reset the counter after sending the report
         send_traffic_report();
-    }    
+    }
 }
 
 //function creatiing 68 bytes payload and sending it to the destination address
@@ -67,14 +67,14 @@ void esp_show_neighbor_table()
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
-    
+
     ESP_LOGI(TAG,"Network Neighbors:");
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
         ESP_LOGI(TAG,"Index: %3d", itor);
         ESP_LOGI(TAG,"  Age: %3d", neighbor.age);
         ESP_LOGI(TAG,"  Neighbor: 0x%04hx", neighbor.short_addr);
         ESP_LOGI(TAG,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
-        ESP_LOGI(TAG,"  Type: %3s", dev_type_name[neighbor.device_type]);   
+        ESP_LOGI(TAG,"  Type: %3s", dev_type_name[neighbor.device_type]);
         ESP_LOGI(TAG,"  Rel: %c", rel_name[neighbor.relationship]);
         ESP_LOGI(TAG,"  Depth: %3d", neighbor.depth);
         ESP_LOGI(TAG,"  RSSI: %3d", neighbor.rssi);
@@ -91,7 +91,7 @@ void esp_show_route_table()
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_info_t route = {};
-    
+
     ESP_LOGI(TAG, "Zigbee Network Routes:");
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
         ESP_LOGI(TAG,"Index: %3d", itor);
@@ -102,7 +102,7 @@ void esp_show_route_table()
         ESP_LOGI(TAG, "  Flags: 0x%02x", *(uint8_t *)&route.flags);
         ESP_LOGI(TAG," ");
     }
-} 
+}
 
 void esp_zigbee_include_show_tables(void)
 {
@@ -117,16 +117,22 @@ static switch_func_pair_t button_func_pair[] = {
 
 static void turn_on_off_switch(void)
 {//0x404ccafffe5fb4d4
-    esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
-    esp_zb_get_long_address(addr_com14);
+//     esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
+//     esp_zb_get_long_address(addr_com14);
 
     ESP_LOGW(TAG, "Toggling switch on GPIO %d", GPIO_NUM_8);
-    //gpio_pullup_en(GPIO_NUM_8);
-    static bool light_on = false;
-    light_on = !light_on;
-    light_driver_set_power(light_on);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for 1 second to simulate the switch toggle
+    static bool led_state = false;
+    static bool is_initialized = false;
+
+    if (!is_initialized) {
+        // light_driver_init(LIGHT_DEFAULT_OFF);
+        is_initialized = true;
+        return;
+    }
+    // light_driver_set_power(led_state);
+    led_state = !led_state;
 }
+
 
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
@@ -137,12 +143,12 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
                 confirm.src_endpoint, esp_zb_get_short_address(), confirm.dst_endpoint, confirm.dst_addr.addr_short,
             confirm.tx_time);
         // ESP_LOG_BUFFER_CHAR_LEVEL("APSDE CONFIRM", confirm.asdu, confirm.asdu_length, ESP_LOG_INFO);
-        
+
     } else {
         if(confirm.dst_addr_mode == ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT || confirm.dst_addr_mode == ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT) {
             ESP_LOGW("APSDE CONFIRM", "Failed to send APSDE-DATA request to 0x%016" PRIx64 ", error code: %d, tx time %d ms",
                      *(uint64_t *)confirm.dst_addr.addr_long, confirm.status, confirm.tx_time);
-            
+
         } else if(confirm.dst_addr_mode == ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT || confirm.dst_addr_mode == ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT) {
             ESP_LOGW("APSDE CONFIRM", "Failed to send APSDE-DATA request to 0x%04hx, error code: %d, tx time %d ms",
                      confirm.dst_addr.addr_short, confirm.status, confirm.tx_time);
@@ -159,14 +165,14 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
-        turn_on_off_switch(); // Call the function to toggle the switch
+        // turn_on_off_switch(); // Call the function to toggle the switch
         byte_counter += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
         if (ind.dst_endpoint == 70 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication about traffic, source address 0x%04hx,"
                      ", tx_time %d ms", ind.src_short_addr, ind.rx_time);
             ESP_LOG_BUFFER_CHAR_LEVEL("APSDE INDICATION", ind.asdu, ind.asdu_length, ESP_LOG_INFO);
             processed = true; // Mark as processed
-        } 
+        }
         if (ind.dst_endpoint == 27 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             create_ping(ind.src_short_addr); // Respond to the received data
         }
@@ -201,7 +207,7 @@ void create_ping_64(uint64_t dest_addr)
     memcpy(req.dst_addr.addr_long, ieee_addr, sizeof(esp_zb_ieee_addr_t)); // Copy the 64-bit address
 
     for(uint8_t i = 0; i < data_length; i++) {
-        req.asdu[i] = i % 256; 
+        req.asdu[i] = i % 256;
     }
 
     ESP_LOGI(TAG, "Sending APS data request to 0x%016" PRIx64 " with %ld bytes", dest_addr, data_length);
@@ -266,7 +272,7 @@ void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions)
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
-        create_ping(0x0000); 
+        create_ping(0x0000);
         esp_zigbee_include_show_tables();
         // create_network_load(0x0000);
 
@@ -276,8 +282,8 @@ void button_handler(switch_func_pair_t *button_func_pair)
         ESP_LOGI("empty line", "");
         create_network_load_64bit(0x404ccafffe5de2a8, 3);
         ESP_LOGI("empty line", "");
-        
-        
+
+
     }
 }
 
@@ -286,7 +292,6 @@ bool deferred_driver_init(void)
     uint8_t button_num = PAIR_SIZE(button_func_pair);
 
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
-    light_driver_init(true);
     return is_initialized;
 }
 
@@ -299,7 +304,7 @@ void send_traffic_report(void)
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
-    
+
     const uint8_t traffic_report_endpoint = 70;
 
 

@@ -4,6 +4,6 @@ idf_component_register(
                                     "../../managed_components/espressif__esp-zboss-lib/include" 
                                     "../../managed_components/espressif__esp-zigbee-lib/include"
                                     "../../../common/switch_driver/include" 
-                                    "../../../common/light_driver/include"
+                                    "../../../common/light_driver/include" 
                     REQUIRES "espressif__esp-zboss-lib" "espressif__esp-zigbee-lib" "switch_driver" 
 )
