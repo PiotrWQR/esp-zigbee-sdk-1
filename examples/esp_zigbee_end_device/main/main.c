@@ -44,7 +44,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
                 ESP_LOGI(TAG, "Device is not factory new.");
             }
             // Initialize the button handler
-            ESP_LOGI(TAG, "Deferred driver initialization %s", deferred_driver_init() ? "failed" : "successful");
+            ESP_LOGI(TAG, "Deferred driver initialization %s", deferred_driver_init() ? "successful" : "failed");
         } else {
             ESP_LOGW(TAG, "%s failed with status: %s, retrying", esp_zb_zdo_signal_to_string(sig_type),
                      esp_err_to_name(err_status));

@@ -12,7 +12,7 @@
 
 #include <memory.h>
 
-
+#include "light_driver.h"
 
 static const char *TAG = "esp_zigbee_include";
 
@@ -119,11 +119,13 @@ static void turn_on_off_switch(void)
 {//0x404ccafffe5fb4d4
     esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
     esp_zb_get_long_address(addr_com14);
-    gpio_pullup_en(GPIO_NUM_8);
 
+    ESP_LOGW(TAG, "Toggling switch on GPIO %d", GPIO_NUM_8);
+    //gpio_pullup_en(GPIO_NUM_8);
     static bool light_on = false;
     light_on = !light_on;
-    gpio_set_level(GPIO_NUM_8, light_on ? 1 : 0);
+    light_driver_set_power(light_on);
+    vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for 1 second to simulate the switch toggle
 }
 
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
@@ -284,6 +286,7 @@ bool deferred_driver_init(void)
     uint8_t button_num = PAIR_SIZE(button_func_pair);
 
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
+    light_driver_init(true);
     return is_initialized;
 }
 
