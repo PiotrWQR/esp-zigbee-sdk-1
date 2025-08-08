@@ -115,7 +115,16 @@ static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 
+static void turn_on_off_switch(void)
+{//0x404ccafffe5fb4d4
+    esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
+    esp_zb_get_long_address(addr_com14);
+    gpio_pullup_en(GPIO_NUM_8);
 
+    static bool light_on = false;
+    light_on = !light_on;
+    gpio_set_level(GPIO_NUM_8, light_on ? 1 : 0);
+}
 
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
@@ -148,6 +157,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
+        turn_on_off_switch(); // Call the function to toggle the switch
         byte_counter += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
         if (ind.dst_endpoint == 70 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication about traffic, source address 0x%04hx,"
