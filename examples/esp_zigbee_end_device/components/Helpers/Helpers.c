@@ -16,6 +16,11 @@
 
 static const char *TAG = "esp_zigbee_include";
 
+//function creatiing 68 bytes payload and sending it to the destination address
+void create_ping(uint16_t dest_addr);
+void create_ping_64bit(uint64_t dest_addr);
+void create_network_load(uint16_t dest_addr, uint8_t repetitions);
+void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
 
 static uint32_t byte_counter = 0;
 static uint32_t byte_count = 0;
@@ -52,18 +57,12 @@ void traffic_reporter_init(){
         vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
         byte_count = byte_counter; // Store the current byte count
         byte_counter = 0; // Reset the counter after sending the report
-        //send_traffic_report();
-        create_network_load_64bit(0x404ccafffe5fae8c,1);
-        create_network_load_64bit(0x404ccafffe5fdea8,1);
-        create_network_load_64bit(0x404ccafffe5fae8c,1);
+        send_traffic_report();
+
     }
 }
 
-//function creatiing 68 bytes payload and sending it to the destination address
-void create_ping(uint16_t dest_addr);
-void create_ping_64bit(uint64_t dest_addr);
-void create_network_load(uint16_t dest_addr, uint8_t repetitions);
-void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
+
 //wyświetla sąsiadów
 void esp_show_neighbor_table()
 {
@@ -188,16 +187,16 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
-        turn_on_off_switch(); // Call the function to toggle the switch
         byte_counter += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
         if (ind.dst_endpoint == 70 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication about traffic, source address 0x%04hx,"
-                     ", tx_time %d ms", ind.src_short_addr, ind.rx_time);
-            ESP_LOG_BUFFER_CHAR_LEVEL("APSDE INDICATION", ind.asdu, ind.asdu_length, ESP_LOG_INFO);
-            processed = true; // Mark as processed
-        }
+                ", tx_time %d ms", ind.src_short_addr, ind.rx_time);
+                ESP_LOG_BUFFER_CHAR_LEVEL("APSDE INDICATION", ind.asdu, ind.asdu_length, ESP_LOG_INFO);
+                processed = true; // Mark as processed
+            }
         if (ind.dst_endpoint == 27 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
-            create_ping(ind.src_short_addr); // Respond to the received data
+            turn_on_off_switch(); // Call the function to toggle the switch
+            // create_ping(ind.src_short_addr); // Respond to the received data
         }
     } else {
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
@@ -298,13 +297,13 @@ void button_handler(switch_func_pair_t *button_func_pair)
         create_ping(0x0000);
         esp_zigbee_include_show_tables();
         // create_network_load(0x0000);
-
-        create_network_load_64bit(0x404ccafffe5fae8c, 3);
-        ESP_LOGI("empty line", "");
-        create_network_load_64bit(0x404ccafffe5fb4d4, 3);
-        ESP_LOGI("empty line", "");
-        create_network_load_64bit(0x404ccafffe5de2a8, 3);
-        ESP_LOGI("empty line", "");
+        refresh_routes();
+        // create_network_load_64bit(0x404ccafffe5fae8c, 3);
+        // ESP_LOGI("empty line", "");
+        // create_network_load_64bit(0x404ccafffe5fb4d4, 3);
+        // ESP_LOGI("empty line", "");
+        // create_network_load_64bit(0x404ccafffe5de2a8, 3);
+        // ESP_LOGI("empty line", "");
 
 
     }
@@ -330,7 +329,7 @@ void send_traffic_report(void)
 
     const uint8_t traffic_report_endpoint = 70;
 
-
+    
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
         if( neighbor.relationship == ESP_ZB_NWK_RELATIONSHIP_CHILD){
             esp_zb_apsde_data_req_t req = create_aps_request(neighbor.short_addr, traffic_report_endpoint, traffic_report_endpoint, ESP_ZB_AF_HA_PROFILE_ID,
