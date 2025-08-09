@@ -9,7 +9,7 @@
 #include "freertos/task.h"
 #include "esp_zigbee_core.h"
 #include "aps/esp_zigbee_aps.h"
-//#include "light_driver.h"
+#include "light_driver.h"
 
 #include <memory.h>
 
@@ -115,21 +115,38 @@ static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 
+bool compare_addresses(esp_zb_64bit_addr_t addr1 , esp_zb_64bit_addr_t addr2)
+{
+    for (int i = 0; i < 8; i++) {
+        if (addr1[i] != addr2[i]) {
+            return false;
+        }
+    }
+    return true;
+
+}
+
 static void turn_on_off_switch(void)
 {//0x404ccafffe5fb4d4
-//     esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
-//     esp_zb_get_long_address(addr_com14);
-
-    ESP_LOGW(TAG, "Toggling switch on GPIO %d", GPIO_NUM_8);
+    esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
+    esp_zb_64bit_addr_t addr_com17 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xde,0xa8};
+    esp_zb_64bit_addr_t addr_com5 =  {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xa7,0xf4};
+    esp_zb_64bit_addr_t device_addr;
+    esp_zb_get_long_address(device_addr);
+    
+    
+    
     static bool led_state = false;
     static bool is_initialized = false;
+    bool isCOM14 = compare_addresses(device_addr, addr_com14);
 
-    if (!is_initialized) {
-        // light_driver_init(LIGHT_DEFAULT_OFF);
+    if (!is_initialized && isCOM14) {
+        ESP_LOGI(TAG, "Initializing light driver on GPIO %d", GPIO_NUM_8);
+        light_driver_init(LIGHT_DEFAULT_OFF);
         is_initialized = true;
         return;
     }
-    // light_driver_set_power(led_state);
+    light_driver_set_power(led_state);
     led_state = !led_state;
 }
 
@@ -165,7 +182,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
-        // turn_on_off_switch(); // Call the function to toggle the switch
+        turn_on_off_switch(); // Call the function to toggle the switch
         byte_counter += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
         if (ind.dst_endpoint == 70 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication about traffic, source address 0x%04hx,"
