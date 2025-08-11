@@ -14,7 +14,7 @@
 #include <memory.h>
 
 
-static const char *TAG = "esp_zigbee_include";
+static const char *TAG = "esp_zigbee_helpers";
 
 //function creatiing 68 bytes payload and sending it to the destination address
 void create_ping(uint16_t dest_addr);
@@ -117,7 +117,7 @@ static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 
-bool compare_addresses(esp_zb_64bit_addr_t addr1 , esp_zb_64bit_addr_t addr2)
+bool equal_addresses(esp_zb_64bit_addr_t addr1 , esp_zb_64bit_addr_t addr2)
 {
     for (int i = 0; i < 8; i++) {
         if (addr1[i] != addr2[i]) {
@@ -129,10 +129,10 @@ bool compare_addresses(esp_zb_64bit_addr_t addr1 , esp_zb_64bit_addr_t addr2)
 }
 
 static void turn_on_off_switch(void)
-{//0x404ccafffe5fb4d4
-    esp_zb_64bit_addr_t addr_com14 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xb4,0xd4};
-    esp_zb_64bit_addr_t addr_com17 = {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xde,0xa8};
-    esp_zb_64bit_addr_t addr_com5 =  {0x40,0x4c,0xca,0xff,0xfe,0x5f,0xa7,0xf4};
+{//adresy musza być odwrócone
+    esp_zb_64bit_addr_t addr_com14 = {0xd4,0xb4,0x5f,0xfe,0xff,0xca,0x4c,0x40};
+    esp_zb_64bit_addr_t addr_com17 = {0xa8,0xde,0x5f,0xfe,0xca,0xff,0x4c,0x40};
+    esp_zb_64bit_addr_t addr_com5 =  {0xf4,0xa7,0x5f,0xfe,0xca,0xff,0x4c,0x40};
     esp_zb_64bit_addr_t device_addr;
     esp_zb_get_long_address(device_addr);
     
@@ -140,8 +140,8 @@ static void turn_on_off_switch(void)
     
     static bool led_state = false;
     static bool is_initialized = false;
-    bool isCOM14 = compare_addresses(device_addr, addr_com14);
-
+    bool isCOM14 = equal_addresses(device_addr, addr_com14);
+    ESP_LOGI(TAG, "Is initialized: %s", is_initialized ? "true" : "false");
     if (!is_initialized) {
         if(isCOM14){
         ESP_LOGI(TAG, "Initializing light driver on GPIO %d", GPIO_NUM_8);
@@ -154,7 +154,6 @@ static void turn_on_off_switch(void)
     light_driver_set_power(led_state);
     led_state = !led_state;
 }
-
 
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
@@ -181,7 +180,6 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
         }
     }
 }
-
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
@@ -238,7 +236,7 @@ void create_ping_64(uint64_t dest_addr)
     esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
 }
-//TODO sprawdz większy payload, czy działa
+
 void create_ping(uint16_t dest_addr)
 {
     uint32_t data_length = 50; // Example payload length
@@ -290,7 +288,6 @@ void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions)
     }
 }
 
-
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
@@ -304,7 +301,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // ESP_LOGI("empty line", "");
         // create_network_load_64bit(0x404ccafffe5de2a8, 3);
         // ESP_LOGI("empty line", "");
-
+        turn_on_off_switch();
 
     }
 }
@@ -316,7 +313,6 @@ bool deferred_driver_init(void)
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized;
 }
-
 
 void send_traffic_report(void)
 {
@@ -342,7 +338,6 @@ void send_traffic_report(void)
     }
 
 }
-
 
 void refresh_routes(void)
 {

@@ -324,7 +324,6 @@ void send_traffic_report(void)
 
 
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-
     }
 
 }
