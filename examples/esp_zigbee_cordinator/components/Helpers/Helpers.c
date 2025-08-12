@@ -40,7 +40,7 @@ void traffic_reporter_init(void *pvParameters) {
         byte_count_out = byte_counter_out; // Store the current byte count
         byte_counter_out = 0; // Reset the counter after sending the report
         //send_traffic_report();
-        refresh_routes();
+        //refresh_routes();
     }    
 }
 
@@ -177,7 +177,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     bool processed = false;
     if (ind.status == 0x00) {
-        byte_counter_out += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
+        byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
         ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_out);
         if (ind.dst_endpoint == 27 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOG_BUFFER_HEX_LEVEL("APSDE INDICATION", ind.asdu, ind.asdu_length, ESP_LOG_INFO);
@@ -247,6 +247,7 @@ void create_ping(uint16_t dest_addr, bool show_log)
         .radius = 3,                                 // Example radius
     };
 
+    req.dst_endpoint = 27;
     if (req.asdu == NULL) {
         ESP_LOGE(TAG_include, "Failed to allocate memory for ASDU");
         return;
@@ -307,6 +308,7 @@ void refresh_routes(void)
     ESP_LOGI(TAG_include, "Refreshing Zigbee Network Routes:");
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
         create_ping(route.dest_addr, false);
+        vTaskDelay(pdMS_TO_TICKS(100)); // Delay to avoid flooding the network
     }
 }
 
@@ -321,7 +323,6 @@ void send_traffic_report(void)
     esp_zb_nwk_neighbor_info_t neighbor = {};
     
     const uint8_t traffic_report_endpoint = 70;
-
 
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
     }

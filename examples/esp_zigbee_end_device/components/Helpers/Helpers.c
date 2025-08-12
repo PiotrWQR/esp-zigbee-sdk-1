@@ -131,8 +131,8 @@ bool equal_addresses(esp_zb_64bit_addr_t addr1 , esp_zb_64bit_addr_t addr2)
 static void turn_on_off_switch(void)
 {//adresy musza być odwrócone
     esp_zb_64bit_addr_t addr_com14 = {0xd4,0xb4,0x5f,0xfe,0xff,0xca,0x4c,0x40};
-    esp_zb_64bit_addr_t addr_com17 = {0xa8,0xde,0x5f,0xfe,0xca,0xff,0x4c,0x40};
-    esp_zb_64bit_addr_t addr_com5 =  {0xf4,0xa7,0x5f,0xfe,0xca,0xff,0x4c,0x40};
+    esp_zb_64bit_addr_t addr_com17 = {0xa8,0xde,0x5f,0xfe,0xff,0xca,0x4c,0x40};
+    esp_zb_64bit_addr_t addr_com5 =  {0xf4,0xa7,0x5f,0xfe,0xff,0xca,0x4c,0x40};
     esp_zb_64bit_addr_t device_addr;
     esp_zb_get_long_address(device_addr);
     
@@ -153,6 +153,7 @@ static void turn_on_off_switch(void)
 
     light_driver_set_power(led_state);
     led_state = !led_state;
+    vTaskDelay(pdMS_TO_TICKS(100)); // Delay for 100 milliseconds to observe the change
 }
 
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)

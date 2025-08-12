@@ -13,7 +13,7 @@
     .install_code_policy = INSTALLCODE_POLICY_ENABLE,                                   \
     .nwk_cfg.zed_cfg = {                                                                \
         .ed_timeout = 70,                                                               \
-        .keep_alive = 600000,                                                       \
+        .keep_alive = 600000,                                                           \
     },                                                                                  \
 }
 
