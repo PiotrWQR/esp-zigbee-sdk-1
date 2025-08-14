@@ -14,6 +14,8 @@
 #include <memory.h>
 
 
+
+
 static const char *TAG = "esp_zigbee_helpers";
 
 //function creatiing 68 bytes payload and sending it to the destination address
@@ -25,29 +27,23 @@ void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
 static uint32_t byte_counter = 0;
 static uint32_t byte_count = 0;
 
-esp_zb_apsde_data_req_t create_aps_request(uint16_t dest_addr, uint8_t dst_endpoint, uint8_t src_endpoint,
-                                           uint16_t profile_id, uint16_t cluster_id, uint8_t *asdu, uint32_t asdu_length,
-                                           uint8_t tx_options, bool use_alias, uint16_t alias_src_addr, int alias_seq_num,
-                                           uint8_t radius)
-{
+esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode, esp_zb_addr_u){
     esp_zb_apsde_data_req_t req = {
-        .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
-        .dst_addr.addr_short = dest_addr,
-        .dst_endpoint = dst_endpoint,
-        .profile_id = profile_id,
-        .cluster_id = cluster_id,
-        .src_endpoint = src_endpoint,
-        .asdu_length = asdu_length,
-        .asdu = asdu,
-        .tx_options = tx_options,
-        .use_alias = use_alias,
-        .alias_src_addr = alias_src_addr,
-        .alias_seq_num = alias_seq_num,
-        .radius = radius
+        .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT,
+        .dst_endpoint = 27,                                 // Example endpoint
+        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,              // Example profile ID
+        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,          // Example cluster ID (On/Off cluster)
+        .src_endpoint = 10,                                 // Example source endpoint
+        .asdu_length = 0,                                   //Payload must be configured
+        .asdu = NULL,
+        .tx_options = 0,                                    // Example transmission options
+        .use_alias = false,
+        .alias_src_addr = 0,
+        .alias_seq_num = 0,
+        .radius = 3,                                        // Example radius
     };
     return req;
 }
-
 
 void traffic_reporter_init(){
     byte_counter = 0;
@@ -61,7 +57,6 @@ void traffic_reporter_init(){
 
     }
 }
-
 
 //wyświetla sąsiadów
 void esp_show_neighbor_table()
@@ -205,58 +200,39 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     return processed;
 }
 
+
 void create_ping_64(uint64_t dest_addr)
 {
     uint32_t data_length = 70;
-    esp_zb_ieee_addr_t ieee_addr;
-    memcpy(ieee_addr, &dest_addr, sizeof(esp_zb_ieee_addr_t)); // Copy the 64-bit address into the ieee_addr variable
+    //esp_zb_ieee_addr_t ieee_addr;
+    esp_zb_addr_u addr_u;
+    memcpy(addr_u.addr_long, &dest_addr, sizeof(esp_zb_ieee_addr_t)); // Copy the 64-bit address into the ieee_addr variable
 
-    esp_zb_apsde_data_req_t req = {
-        .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT,
-        .dst_endpoint = 10,                                 // Example endpoint
-        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,              // Example profile ID
-        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,          // Example cluster ID (On/Off cluster)
-        .src_endpoint = 10,                                 // Example source endpoint
-        .asdu_length = data_length,                         // No payload for ping
-        .asdu = malloc(data_length * sizeof(uint8_t)),      // No payload for ping
-        .tx_options = 0,                                    // Example transmission options
-        .use_alias = false,
-        .alias_src_addr = 0,
-        .alias_seq_num = 0,
-        .radius = 3,                                        // Example radius
-    };
-    memcpy(req.dst_addr.addr_long, ieee_addr, sizeof(esp_zb_ieee_addr_t)); // Copy the 64-bit address
+    esp_zb_apsde_data_req_t req = create_basic_request(ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT, addr_u);
 
+    
     for(uint8_t i = 0; i < data_length; i++) {
         req.asdu[i] = i % 256;
     }
-
+    
     ESP_LOGI(TAG, "Sending APS data request to 0x%016" PRIx64 " with %ld bytes", dest_addr, data_length);
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
+
+    ESP_LOGI(TAG, "Send ping to 0x%016" PRIx64, *(uint64_t *) addr_u.addr_long);
 }
 
 void create_ping(uint16_t dest_addr)
 {
     uint32_t data_length = 50; // Example payload length
-    esp_zb_apsde_data_req_t req = {
-        .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
-        .dst_addr.addr_short = dest_addr,
-        .dst_endpoint = 10,                          // Example endpoint
-        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,      // Example profile ID
-        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,  // Example cluster ID (On/Off cluster)
-        .src_endpoint = 10,                          // Example source endpoint
-        .asdu_length = data_length,                  // No payload for ping
-        .asdu = malloc(data_length * sizeof(uint8_t)), // Allocate memory for ASDU if needed
-        .tx_options = 0,                            // Example transmission options
-        .use_alias = false,
-        .alias_src_addr = 0,
-        .alias_seq_num = 0,
-        .radius = 3,                                 // Example radius
-    };
+    esp_zb_addr_u addr_u;
+    addr_u.addr_short = dest_addr; // Set the destination address
 
+    esp_zb_apsde_data_req_t req  = create_basic_request(ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,addr_u);
+
+    req.asdu = malloc(data_length * sizeof(uint8_t));
     if (req.asdu == NULL) {
         ESP_LOGE(TAG, "Failed to allocate memory for ASDU");
         return;
@@ -275,11 +251,17 @@ void create_ping(uint16_t dest_addr)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
-void create_network_load(uint16_t dest_addr, uint8_t repetitions)
+
+void send_on_main_endpoint(uint16_t dest_addr, uint8_t *payload){
+
+
+}
+
+void create_network_load(uint16_t dest_addr, uint8_t bytesPerSecond)
 {
-    for(int8_t i = 0; i < repetitions; i++) {
-        create_ping(dest_addr);
-    }
+    uint32_t data_length = bytesPerSecond; // Example payload length
+    create_ping(dest_addr);
+
 }
 
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions)
@@ -327,16 +309,6 @@ void send_traffic_report(void)
     const uint8_t traffic_report_endpoint = 70;
 
     
-    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        if( neighbor.relationship == ESP_ZB_NWK_RELATIONSHIP_CHILD){
-            esp_zb_apsde_data_req_t req = create_aps_request(neighbor.short_addr, traffic_report_endpoint, traffic_report_endpoint, ESP_ZB_AF_HA_PROFILE_ID,
-                               ESP_ZB_ZCL_CLUSTER_ID_BASIC, (uint8_t *)&traffic_report, sizeof(esp_zb_network_traffic_report_t),
-                               0, false, 0, 0, 3);
-            esp_zb_lock_acquire(portMAX_DELAY);
-            esp_zb_aps_data_request(&req);
-            esp_zb_lock_release();
-        }
-    }
 
 }
 
