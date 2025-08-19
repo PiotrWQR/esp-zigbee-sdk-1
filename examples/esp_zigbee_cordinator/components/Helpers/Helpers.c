@@ -38,9 +38,7 @@ void traffic_reporter_init(void *pvParameters) {
         ESP_LOGI(TAG_include, "Byte count in last 10 seconds: %ld", byte_count_out);
         vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
         byte_count_out = byte_counter_out; // Store the current byte count
-        byte_counter_out = 0; // Reset the counter after sending the report
-        //send_traffic_report();
-        //refresh_routes();
+        byte_counter_out = 0; // Reset the counter after sending the report;
     }    
 }
 
@@ -79,7 +77,6 @@ esp_zb_apsde_data_req_t create_aps_request(uint16_t dest_addr, uint8_t dst_endpo
     };
     return req;
 }
-
 
 //wyświetla sąsiadów
 static void esp_show_neighbor_table()
@@ -152,7 +149,6 @@ void esp_zigbee_include_show_tables(void)
     esp_show_route_record_table();
 }
 
-
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
      if (confirm.status == 0x00) {
@@ -172,7 +168,6 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
         }
     }
 }
-
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     bool processed = false;
@@ -272,7 +267,6 @@ void create_ping(uint16_t dest_addr, bool show_log)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
-
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
@@ -289,16 +283,12 @@ void button_handler(switch_func_pair_t *button_func_pair)
     }
 }
 
-
-
-
 bool deferred_driver_init(void)
 {
     uint8_t button_num = PAIR_SIZE(button_func_pair);
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized ;
 }
-
 
 void refresh_routes(void)
 {
@@ -312,7 +302,6 @@ void refresh_routes(void)
     }
 }
 
-
 void send_traffic_report(void)
 {
     esp_zb_network_traffic_report_t traffic_report = {
@@ -324,7 +313,7 @@ void send_traffic_report(void)
     
     const uint8_t traffic_report_endpoint = 70;
 
-    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
+    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) { 
     }
 
 }

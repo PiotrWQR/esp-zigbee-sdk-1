@@ -162,6 +162,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
 
+    
     esp_zb_nwk_set_link_status_period(0x4f);
     esp_zb_nvram_erase_at_start(true);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);

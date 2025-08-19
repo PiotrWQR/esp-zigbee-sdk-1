@@ -24,8 +24,24 @@ void create_ping_64bit(uint64_t dest_addr);
 void create_network_load(uint16_t dest_addr, uint8_t repetitions);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
 
-static uint32_t byte_counter = 0;
-static uint32_t byte_count = 0;
+static uint32_t byte_counter_in = 0;
+static uint32_t byte_count_in = 0;
+static uint32_t byte_counter_out = 0;
+static uint32_t byte_count_out = 0;
+
+
+uint16_t request_size(esp_zb_apsde_data_req_t *req) {
+    if (!req) {
+        return 0;
+    }
+    uint16_t size = aps_address_modes_size[req->dst_addr_mode];
+
+    size+= 19; // 19 is the size of the fixed fields in esp_zb_apsde_data_req_t
+    size += req->asdu_length;
+    return size;
+}
+
+
 
 esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode, esp_zb_addr_u){
     esp_zb_apsde_data_req_t req = {
@@ -46,14 +62,14 @@ esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode
 }
 
 void traffic_reporter_init(){
-    byte_counter = 0;
-    byte_count = 0;
+    byte_counter_in = 0;
+    byte_count_in = 0;
     while (1) {
-        ESP_LOGI(TAG, "Byte count in last 10 seconds: %ld", byte_count);
-        vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
-        byte_count = byte_counter; // Store the current byte count
-        byte_counter = 0; // Reset the counter after sending the report
-        send_traffic_report();
+        ESP_LOGI(TAG, "Byte count in last 10 seconds: %ld", byte_count_in);
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for 1 second
+        byte_count_in = byte_counter_in; // Store the current byte count
+        byte_counter_in = 0; // Reset the counter after sending the report
+        //send_traffic_report();
 
     }
 }
@@ -181,7 +197,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
     bool processed = false;
     if (ind.status == 0x00) {
-        byte_counter += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
+        byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
         if (ind.dst_endpoint == 70 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication about traffic, source address 0x%04hx,"
                 ", tx_time %d ms", ind.src_short_addr, ind.rx_time);
@@ -194,7 +210,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
         }
     } else {
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
-        byte_counter += ind.asdu_length;
+        byte_counter_in += ind.asdu_length;
         processed = false;
     }
     return processed;
@@ -251,6 +267,35 @@ void create_ping(uint16_t dest_addr)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
+void create_load_packet(uint16_t dest_addr, uint32_t data_length)
+{
+    esp_zb_addr_u addr_u;
+    addr_u.addr_short = dest_addr; // Set the destination address
+
+    esp_zb_apsde_data_req_t req  = create_basic_request(ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,addr_u);
+
+    req.asdu = malloc(data_length * sizeof(uint8_t));
+
+    if (req.asdu == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for ASDU");
+        return;
+    } else {
+        for (uint8_t i = 0; i < data_length; i++) {
+            req.asdu[i] = i % 256; // Fill with some data, e.g., incrementing values
+        }
+    }
+
+    byte_counter_out+= data_length + sizeof(esp_zb_apsde_data_req_t); // Increment the byte counter by the length of the ASDU and the request structure
+    ESP_LOGI(TAG, "Size of request: %ld bytes", data_length+ sizeof(esp_zb_apsde_data_req_t));
+
+
+    ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
+    esp_zb_lock_acquire(portMAX_DELAY);
+    esp_zb_aps_data_request(&req);
+    esp_zb_lock_release();
+    free(req.asdu); // Free the allocated memory for ASDU
+
+}
 
 void send_on_main_endpoint(uint16_t dest_addr, uint8_t *payload){
 
@@ -259,8 +304,8 @@ void send_on_main_endpoint(uint16_t dest_addr, uint8_t *payload){
 
 void create_network_load(uint16_t dest_addr, uint8_t bytesPerSecond)
 {
-    uint32_t data_length = bytesPerSecond; // Example payload length
-    create_ping(dest_addr);
+    uint32_t data_length = bytesPerSecond;
+    
 
 }
 
