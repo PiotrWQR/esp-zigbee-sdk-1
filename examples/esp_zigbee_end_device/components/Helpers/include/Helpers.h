@@ -39,11 +39,11 @@ typedef struct {
 
 
 static const uint8_t aps_address_modes_size[] = {
-    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
-    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
-    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 3,
-    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 9,
-    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 3,
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 7,
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 11,
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 23,
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 19,
 };
 
 void send_traffic_report(void);

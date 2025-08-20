@@ -20,6 +20,13 @@ static uint32_t byte_counter_in = 0;
 static uint32_t byte_count_out = 0;
 static uint32_t byte_count_in = 0;
 
+//function creating payload and sending it to the destination address
+void create_ping(uint16_t dest_addr, bool show_log);
+void create_ping_64bit(uint64_t dest_addr);
+void create_network_load(uint16_t dest_addr, uint8_t repetitions);
+void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
+
+
 uint16_t request_size(esp_zb_apsde_data_req_t *req) {
     if (!req) {
         return 0;
@@ -34,11 +41,14 @@ uint16_t request_size(esp_zb_apsde_data_req_t *req) {
 void traffic_reporter_init(void *pvParameters) {
     byte_counter_out = 0;
     byte_count_out = 0;
+    static uint16_t bandwidth = 10;
     while (1) {
         ESP_LOGI(TAG_include, "Byte count in last 10 seconds: %ld", byte_count_out);
         vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
         byte_count_out = byte_counter_out; // Store the current byte count
         byte_counter_out = 0; // Reset the counter after sending the report;
+
+
     }    
 }
 
@@ -49,11 +59,7 @@ static switch_func_pair_t button_func_pair[] = {
 
 
 
-//function creating payload and sending it to the destination address
-void create_ping(uint16_t dest_addr, bool show_log);
-void create_ping_64bit(uint64_t dest_addr);
-void create_network_load(uint16_t dest_addr, uint8_t repetitions);
-void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
+
 
 esp_zb_apsde_data_req_t create_aps_request(uint16_t dest_addr, uint8_t dst_endpoint, uint8_t src_endpoint,
                                            uint16_t profile_id, uint16_t cluster_id, uint8_t *asdu, uint32_t asdu_length,
