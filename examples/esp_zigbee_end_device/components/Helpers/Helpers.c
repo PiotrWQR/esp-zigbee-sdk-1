@@ -42,7 +42,7 @@ uint16_t request_size(esp_zb_apsde_data_req_t *req) {
     return size;
 }
 
-esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode, esp_zb_addr_u){
+    esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode, esp_zb_addr_u){
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT,
         .dst_endpoint = 27,                                 // Example endpoint
