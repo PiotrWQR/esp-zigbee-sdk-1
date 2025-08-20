@@ -21,8 +21,9 @@ static const char *TAG = "esp_zigbee_helpers";
 //function creatiing 68 bytes payload and sending it to the destination address
 void create_ping(uint16_t dest_addr);
 void create_ping_64bit(uint64_t dest_addr);
-void create_network_load(uint16_t dest_addr, uint8_t repetitions);
+void create_load_packet(uint16_t dest_addr, uint32_t data_length);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
+void create_network_load(uint16_t dest_addr, uint32_t bytesPerSecond);
 
 static uint32_t byte_counter_in = 0;
 static uint32_t byte_count_in = 0;
@@ -67,9 +68,10 @@ void traffic_reporter_init(){
         ESP_LOGI(TAG, "Byte count in last 10 seconds: %ld", byte_count_in);
         byte_counter_in = 0; // Reset the counter after sending the report
         byte_count_in = byte_counter_in; // Store the current byte count
-        create_load_packet(0x0000, byte_count_in;
+        create_network_load(0x0000, tested_throughput);
+        tested_throughput += 50;
+        ESP_LOGI(TAG, "Testing throughput: %d bytes per second", tested_throughput);
         vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for 1 second
-        
 
 
     }
@@ -97,7 +99,6 @@ void esp_show_neighbor_table()
         ESP_LOGI(TAG," ");
     }
 }
-
 //wyswietla trasy
 void esp_show_route_table()
 {
@@ -292,17 +293,18 @@ void create_load_packet(uint16_t dest_addr, uint32_t data_length)
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
+    
     free(req.asdu); // Free the allocated memory for ASDU
 
 }
 
-void create_network_load(uint16_t dest_addr, uint8_t bytesPerSecond)
+void create_network_load(uint16_t dest_addr, uint32_t bytesPerSecond)
 {
-    uint32_t reapeats = 0;
+    uint8_t reapeats = (bytesPerSecond / 100 )+1; // Calculate how many times to repeat the request
     esp_zb_addr_u addr_u;
     addr_u.addr_short = dest_addr;
 
-    while(bytesPerSecond > 0)
+    for(uint8_t i = 0; i < reapeats; i++)
     {
         esp_zb_apsde_data_req_t req = create_basic_request(ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT, addr_u);
         uint8_t data_length = bytesPerSecond > 100 ? 100 : bytesPerSecond;
@@ -312,17 +314,19 @@ void create_network_load(uint16_t dest_addr, uint8_t bytesPerSecond)
             ESP_LOGE(TAG, "Failed to allocate memory for ASDU");
             return;
         } else {
+            req.asdu_length = data_length; // Set the length of the ASDU
             for (uint8_t i = 0; i < data_length; i++) {
                 req.asdu[i] = i % 256; // Fill with some data, e.g., incrementing values
             }
         }
-        reapeats++;
-        ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %d bytes, repeated %ld times", dest_addr, data_length, reapeats);
+        //reapeats++;
+        ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %d bytes, repeated %d times", dest_addr, data_length, i+1);
         esp_zb_lock_acquire(portMAX_DELAY);
         esp_zb_aps_data_request(&req);
         esp_zb_lock_release();
         byte_count_out += request_size(&req);
         bytesPerSecond -= request_size(&req);
+            //ESP_LOGW(TAG, "Bytes remaining: %s", i < reapeats ? "true" : false);
         free(req.asdu); // Free the allocated memory for ASDU
     }
 }

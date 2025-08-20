@@ -21,7 +21,7 @@ static void create_test_endpoint(esp_zb_ep_list_t *ep_list)
     char *esp_model_identifier = "esp-c6";
     
     esp_zb_endpoint_config_t endpoint_config = {
-        .endpoint = 10,
+        .endpoint = 27,
         .app_profile_id = ESP_ZB_AF_HA_PROFILE_ID,
         .app_device_id = ESP_ZB_HA_TEST_DEVICE_ID,
         .app_device_version = 0,
