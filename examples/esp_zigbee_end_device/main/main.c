@@ -61,6 +61,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
     case ESP_ZB_BDB_SIGNAL_STEERING:
         if (err_status == ESP_OK) {
             ESP_LOGI(TAG, "Steering started");
+                create_ping(0x0000);
                 esp_zb_ieee_addr_t extended_pan_id;
                 esp_zb_get_extended_pan_id(extended_pan_id);
                 ESP_LOGI(TAG, "Joined network successfully (Extended PAN ID: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, PAN ID: 0x%04hx, Channel:%d, Short Address: 0x%04hx)",

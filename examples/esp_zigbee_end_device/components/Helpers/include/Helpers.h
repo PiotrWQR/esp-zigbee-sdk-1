@@ -8,7 +8,7 @@ bool deferred_driver_init(void);
 void esp_show_neighbor_table();
 void esp_show_route_table();
 void esp_zigbee_include_show_tables(void);
-
+void create_ping(uint16_t dest_addr);
 
 
 static const char *dev_type_name[] = {
