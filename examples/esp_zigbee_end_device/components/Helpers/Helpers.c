@@ -42,7 +42,7 @@ uint16_t request_size(esp_zb_apsde_data_req_t *req) {
     return size;
 }
 
-    esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode, esp_zb_addr_u){
+esp_zb_apsde_data_req_t create_basic_request(esp_zb_aps_address_mode_t addr_mode, esp_zb_addr_u){
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT,
         .dst_endpoint = 27,                                 // Example endpoint
@@ -64,16 +64,20 @@ void traffic_reporter_init(){
     byte_counter_in = 0;
     byte_count_in = 0;
     uint16_t tested_throughput = 0;
+    static uint32_t iteration = 0;
     while (1) {
+
         ESP_LOGI(TAG, "Byte count in last 10 seconds: %ld", byte_count_in);
         byte_counter_in = 0; // Reset the counter after sending the report
         byte_count_in = byte_counter_in; // Store the current byte count
-        create_network_load(0x0000, tested_throughput);
+        //create_network_load(0x0000, tested_throughput);
         tested_throughput += 50;
-        ESP_LOGI(TAG, "Testing throughput: %d bytes per second", tested_throughput);
+        //ESP_LOGI(TAG, "Testing throughput: %d bytes per second", tested_throughput);
         vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for 1 second
-
-
+        if(iteration < 30) {
+            create_ping(0x0000);
+            iteration++;
+        }
     }
 }
 //wyświetla sąsiadów
@@ -208,6 +212,9 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
         if (ind.dst_endpoint == 27 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             turn_on_off_switch(); // Call the function to toggle the switch
             // create_ping(ind.src_short_addr); // Respond to the received data
+        }else {
+            ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication from endpoint %d, source address 0x%04hx, destination address 0x%04hx, tx_time %d ms",
+                ind.src_endpoint, ind.src_short_addr,  ind.rx_time);
         }
     } else {
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
@@ -344,7 +351,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
         create_ping(0x0000);
         esp_zigbee_include_show_tables();
         // create_network_load(0x0000);
-        refresh_routes();
+        //refresh_routes();
         // create_network_load_64bit(0x404ccafffe5fae8c, 3);
         // ESP_LOGI("empty line", "");
         // create_network_load_64bit(0x404ccafffe5fb4d4, 3);

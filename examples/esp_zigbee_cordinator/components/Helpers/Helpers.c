@@ -177,14 +177,18 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     bool processed = false;
-    if (ind.status == 0x00) {
+    ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
+    if(ind.status == 0x00) {
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
-        ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_out);
-        if (ind.dst_endpoint == 27 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
-            ESP_LOG_BUFFER_HEX_LEVEL("APSDE INDICATION", ind.asdu, ind.asdu_length, ESP_LOG_INFO);
-        }
+        ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
+        ESP_LOGI("APSDE INDICATION",
+                "Received from endpoint %d, source address 0x%04hx to endpoint %d,"
+                "destination address 0x%04hx, lqi %d, rx_time %d ms",
+                ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
+                ind.lqi, ind.rx_time);
+        
     } else {
-        byte_counter_out += sizeof(esp_zb_apsde_data_ind_t);
+        byte_counter_in += sizeof(esp_zb_apsde_data_ind_t);
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
         processed = false;
     }
@@ -266,10 +270,9 @@ void create_ping(uint16_t dest_addr, bool show_log)
     }
         
 
-    if(esp_zb_lock_acquire(portMAX_DELAY)){
-        ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
-        esp_zb_lock_release();
-    }
+    esp_zb_lock_acquire(portMAX_DELAY);
+    esp_zb_aps_data_request(&req);
+    esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
@@ -304,7 +307,7 @@ void refresh_routes(void)
     ESP_LOGI(TAG_include, "Refreshing Zigbee Network Routes:");
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
         create_ping(route.dest_addr, false);
-        vTaskDelay(pdMS_TO_TICKS(100)); // Delay to avoid flooding the network
+        vTaskDelay(pdMS_TO_TICKS(50)); // Delay to avoid flooding the network
     }
 }
 
