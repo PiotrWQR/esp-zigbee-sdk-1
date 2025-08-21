@@ -180,12 +180,13 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     if(ind.status == 0x00) {
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
-        ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
+        //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
         ESP_LOGI("APSDE INDICATION",
                 "Received from endpoint %d, source address 0x%04hx to endpoint %d,"
                 "destination address 0x%04hx, lqi %d, rx_time %d ms",
                 ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
                 ind.lqi, ind.rx_time);
+        processed = true;
         
     } else {
         byte_counter_in += sizeof(esp_zb_apsde_data_ind_t);

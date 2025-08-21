@@ -7,13 +7,13 @@
 #define ESP_ZB_PRIMARY_CHANNEL_MASK       ESP_ZB_TRANSCEIVER_ALL_CHANNELS_MASK  /* Zigbee primary channel mask use in the example */
 
 
-#define ESP_ZB_ZR_CONFIG()                                                              \
+#define ESP_ED_CONFIG()                                                              \
 {                                                                                       \
     .esp_zb_role = ESP_ZB_DEVICE_TYPE_ED,                                               \
     .install_code_policy = INSTALLCODE_POLICY_ENABLE,                                   \
     .nwk_cfg.zed_cfg = {                                                                \
         .ed_timeout = 70,                                                               \
-        .keep_alive = 600000,                                                           \
+        .keep_alive = 60000,                                                           \
     },                                                                                  \
 }
 

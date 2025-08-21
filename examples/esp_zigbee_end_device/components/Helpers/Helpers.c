@@ -212,9 +212,11 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
         if (ind.dst_endpoint == 27 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             turn_on_off_switch(); // Call the function to toggle the switch
             // create_ping(ind.src_short_addr); // Respond to the received data
+            processed = true; // Mark as processed
         }else {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication from endpoint %d, source address 0x%04hx, destination address 0x%04hx, tx_time %d ms",
-                ind.src_endpoint, ind.src_short_addr,  ind.rx_time);
+                ind.src_endpoint, ind.src_short_addr, ind.dst_short_addr, ind.rx_time);
+                processed = true; // Mark as processed
         }
     } else {
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
@@ -255,6 +257,8 @@ void create_ping(uint16_t dest_addr)
 
     esp_zb_apsde_data_req_t req  = create_basic_request(ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,addr_u);
 
+    req.dst_endpoint=27;
+    req.src_endpoint=27;
     req.asdu = malloc(data_length * sizeof(uint8_t));
     if (req.asdu == NULL) {
         ESP_LOGE(TAG, "Failed to allocate memory for ASDU");

@@ -118,6 +118,12 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
                  *(uint64_t *)device_authorized_params->long_addr, device_authorized_params->short_addr,
                  device_authorized_params->authorization_type, device_authorized_params->authorization_status);
         break;
+    case ESP_ZB_ZDO_SIGNAL_LEAVE_INDICATION:
+        esp_zb_zdo_signal_leave_indication_params_t *leave_params = (esp_zb_zdo_signal_leave_indication_params_t *)esp_zb_app_signal_get_params(p_sg_p);
+        ESP_LOGI(TAG, "Device left the network: ShortAddr(0x%04hx), LongAddr(0x%016" PRIx64 "), Rejoin(%s)",
+                 leave_params->short_addr, *(uint64_t *)leave_params->device_addr,
+                 leave_params->rejoin ? "true" : "false");
+        break;
     default:
         ESP_LOGI(TAG, "ZDO signal: %s (0x%x), status: %s", esp_zb_zdo_signal_to_string(sig_type), sig_type, esp_err_to_name(err_status));
         break;
@@ -163,8 +169,8 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_init(&zb_nwk_cfg);
 
 
-    //esp_zb_nwk_set_link_status_period(0x4f);
     esp_zb_nvram_erase_at_start(true);
+    esp_zb_nwk_set_link_status_period(0x40);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
     esp_zb_core_action_handler_register(zb_action_handler);
