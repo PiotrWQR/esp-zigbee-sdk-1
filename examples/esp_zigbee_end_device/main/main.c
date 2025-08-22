@@ -44,30 +44,33 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
                 ESP_LOGI(TAG, "Device is not factory new.");
             }
             // Initialize the button handler
-            ESP_LOGI(TAG, "Deferred driver initialization %s", deferred_driver_init() ? "successful" : "failed");
         } else {
             ESP_LOGW(TAG, "%s failed with status: %s, retrying", esp_zb_zdo_signal_to_string(sig_type),
-                     esp_err_to_name(err_status));
+            esp_err_to_name(err_status));
             esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb,
-                                   ESP_ZB_BDB_MODE_INITIALIZATION, 1000);
+            ESP_ZB_BDB_MODE_INITIALIZATION, 1000);
         }
         break;
     case ESP_ZB_ZDO_SIGNAL_DEVICE_ANNCE:
         dev_annce_params= (esp_zb_zdo_signal_device_annce_params_t *)esp_zb_app_signal_get_params(p_sg_p);
         ESP_LOGI(TAG, "Device announce: ShortAddr(0x%04hx), ExtAddr(0x%016" PRIx64 "), Capabilities(0x%x)",
-                 dev_annce_params->device_short_addr, *(uint64_t *)dev_annce_params->ieee_addr,
-                 dev_annce_params->capability);
-        break; 
+            dev_annce_params->device_short_addr, *(uint64_t *)dev_annce_params->ieee_addr,
+            dev_annce_params->capability);
+            break; 
     case ESP_ZB_BDB_SIGNAL_STEERING:
         if (err_status == ESP_OK) {
             ESP_LOGI(TAG, "Steering started");
-                create_ping(0x0000);
-                esp_zb_ieee_addr_t extended_pan_id;
-                esp_zb_get_extended_pan_id(extended_pan_id);
-                ESP_LOGI(TAG, "Joined network successfully (Extended PAN ID: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, PAN ID: 0x%04hx, Channel:%d, Short Address: 0x%04hx)",
-                         extended_pan_id[7], extended_pan_id[6], extended_pan_id[5], extended_pan_id[4],
-                         extended_pan_id[3], extended_pan_id[2], extended_pan_id[1], extended_pan_id[0],
-                         esp_zb_get_pan_id(), esp_zb_get_current_channel(), esp_zb_get_short_address());
+            esp_zb_ieee_addr_t extended_pan_id;
+            esp_zb_get_extended_pan_id(extended_pan_id);
+            ESP_LOGI(TAG, "Joined network successfully (Extended PAN ID: %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, PAN ID: 0x%04hx, Channel:%d, Short Address: 0x%04hx)",
+                extended_pan_id[7], extended_pan_id[6], extended_pan_id[5], extended_pan_id[4],
+                extended_pan_id[3], extended_pan_id[2], extended_pan_id[1], extended_pan_id[0],
+                esp_zb_get_pan_id(), esp_zb_get_current_channel(), esp_zb_get_short_address());
+            ESP_LOGI(TAG, "Deferred driver initialization %s", deferred_driver_init() ? "successful" : "failed");
+            esp_zb_ieee_addr_t tc_address;
+            esp_zb_aps_get_trust_center_address(tc_address);
+            ESP_LOGI(TAG, "Trust center address:  %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x" ,tc_address[7], tc_address[6], tc_address[5], tc_address[4],
+                tc_address[3], tc_address[2], tc_address[1], tc_address[0] );
         } else {
             ESP_LOGI(TAG, "Network steering was not successful (status: %s)", esp_err_to_name(err_status));
             esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_STEERING, 1000);
@@ -147,20 +150,18 @@ static esp_err_t zb_register_device(void)
 
 static void esp_zb_task(void *pcParameters)
 {
-
     esp_zb_cfg_t zb_nwk_cfg = ESP_ED_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
     esp_zb_nvram_erase_at_start(true);
     
-    ESP_ERROR_CHECK(zb_register_device());
-    esp_zb_nwk_set_link_status_period(0x40);
-
+    // esp_zb_nwk_set_link_status_period(0x40);
+    
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
+    esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_core_action_handler_register(zb_action_handler);
     
-
-    esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
+    ESP_ERROR_CHECK(zb_register_device());
     ESP_ERROR_CHECK(esp_zb_start(false));
     esp_zb_stack_main_loop();
 }

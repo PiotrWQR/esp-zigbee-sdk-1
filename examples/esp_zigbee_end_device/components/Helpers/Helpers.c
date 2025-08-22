@@ -200,7 +200,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 {
-    bool processed = false;
+    bool processed = true;
     if (ind.status == 0x00) {
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t); // Increment the byte counter by the length of the ASDU and the indication structure
         if (ind.dst_endpoint == 70 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
@@ -216,7 +216,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
         }else {
             ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication from endpoint %d, source address 0x%04hx, destination address 0x%04hx, tx_time %d ms",
                 ind.src_endpoint, ind.src_short_addr, ind.dst_short_addr, ind.rx_time);
-                processed = true; // Mark as processed
+                processed = false; // Mark as processed
         }
     } else {
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
@@ -255,10 +255,18 @@ void create_ping(uint16_t dest_addr)
     esp_zb_addr_u addr_u;
     addr_u.addr_short = dest_addr; // Set the destination address
 
-    esp_zb_apsde_data_req_t req  = create_basic_request(ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,addr_u);
+    esp_zb_apsde_data_req_t req  = {
+        .dst_addr.addr_short = dest_addr,
+        .src_endpoint = 10,
+        .dst_endpoint = 10,
+        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,
+        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,
+        .asdu = malloc(data_length * sizeof(uint8_t)),
+        .asdu_length = data_length
+    };
 
-    req.dst_endpoint=27;
-    req.src_endpoint=27;
+    
+    
     req.asdu = malloc(data_length * sizeof(uint8_t));
     if (req.asdu == NULL) {
         ESP_LOGE(TAG, "Failed to allocate memory for ASDU");
@@ -352,7 +360,6 @@ void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions)
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
-        create_ping(0x0000);
         esp_zigbee_include_show_tables();
         // create_network_load(0x0000);
         //refresh_routes();
@@ -363,7 +370,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // create_network_load_64bit(0x404ccafffe5de2a8, 3);
         // ESP_LOGI("empty line", "");
         turn_on_off_switch();
-
+        create_ping(0x0000);
     }
 }
 
