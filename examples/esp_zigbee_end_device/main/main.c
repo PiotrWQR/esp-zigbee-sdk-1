@@ -88,6 +88,11 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
     case ESP_ZB_ZDO_SIGNAL_PRODUCTION_CONFIG_READY:
         ESP_LOGI(TAG, "Production config ready");
         break;
+    case ESP_ZB_ZDO_DEVICE_UNAVAILABLE:
+        esp_zb_zdo_device_unavailable_params_t *unavailable_params = (esp_zb_zdo_device_unavailable_params_t *)esp_zb_app_signal_get_params(p_sg_p);
+        ESP_LOGW(TAG, "Device unavailable: ShortAddr: 0x%04hx, ExtAddr: 0x%016" PRIx64 ")",
+            unavailable_params->short_addr, *(uint64_t *)unavailable_params->long_addr);
+        break;
     default:
         ESP_LOGI(TAG, "ZDO signal: %s (0x%x), status: %s", esp_zb_zdo_signal_to_string(sig_type), sig_type, esp_err_to_name(err_status));
         break;

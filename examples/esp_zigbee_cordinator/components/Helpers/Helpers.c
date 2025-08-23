@@ -187,7 +187,6 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
                 ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
                 ind.lqi, ind.rx_time);
         processed = false;
-        
     } else {
         byte_counter_in += sizeof(esp_zb_apsde_data_ind_t);
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
