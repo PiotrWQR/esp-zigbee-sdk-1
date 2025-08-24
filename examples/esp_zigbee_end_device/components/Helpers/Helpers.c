@@ -361,7 +361,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
         esp_zigbee_include_show_tables();
-        create_network_load(0x0000, 50);
+        //create_network_load(0x0000, 50);
         //refresh_routes();
         // create_network_load_64bit(0x404ccafffe5fae8c, 3);
         // ESP_LOGI("empty line", "");
@@ -369,8 +369,8 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // ESP_LOGI("empty line", "");
         // create_network_load_64bit(0x404ccafffe5de2a8, 3);
         // ESP_LOGI("empty line", "");
-        turn_on_off_switch();
-        //create_ping(0x0000);
+        //turn_on_off_switch();
+        create_ping(0x0000);
     }
 }
 

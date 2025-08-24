@@ -9,7 +9,7 @@
 #include "Helpers.h"
 
 
-#if !defined CONFIG_ZB_ZED
+#if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
 #endif
 
