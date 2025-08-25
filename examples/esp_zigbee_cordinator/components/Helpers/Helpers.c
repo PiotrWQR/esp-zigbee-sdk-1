@@ -19,7 +19,7 @@ static uint32_t byte_counter_out = 0;
 static uint32_t byte_counter_in = 0;
 static uint32_t byte_count_out = 0;
 static uint32_t byte_count_in = 0;
-
+static uint32_t ping_count = 0;
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
@@ -181,12 +181,13 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     bool processed = false;
     if(ind.status == 0x00) {
+        ping_count++;
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
         //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
         ESP_LOGI("APSDE INDICATION",
-                "Received from endpoint %d, source address 0x%04hx to endpoint %d,"
+                "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
                 "destination address 0x%04hx, lqi %d, rx_time %d ms",
-                ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
+                ping_count, ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
                 ind.lqi, ind.rx_time);
         processed = false;
     } else {
@@ -282,7 +283,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
         esp_zigbee_include_show_tables();
-        create_ping_64(0x404ccafffe5db4d4); // Example 64-bit address
+        //create_ping_64(0x404ccafffe5db4d4); // Example 64-bit address
         //refresh_routes();
         // create_ping_64(0x404ccafffe5de2a8); // Example 64-bit address
         // vTaskDelay(pdMS_TO_TICKS(100));
