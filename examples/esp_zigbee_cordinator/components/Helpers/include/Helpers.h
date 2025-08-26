@@ -45,6 +45,6 @@ static const uint8_t aps_address_modes_size[] = {
     [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
 };
 typedef struct esp_zb_network_traffic_report_s {
-    uint32_t traffic_count; //Bites recieved in last 10 seconds
-    //esp_zb_ieee_addr_t priority_node
-} esp_zb_network_traffic_report_t;
+    uint16_t short_addr;      //Short address of the reporting device
+    uint32_t traffic_count; //Packets received
+} esp_zb_network_traffic_raport_t;

@@ -20,11 +20,13 @@ static uint32_t byte_counter_in = 0;
 static uint32_t byte_count_out = 0;
 static uint32_t byte_count_in = 0;
 static uint32_t ping_count = 0;
+static esp_zb_network_traffic_raport_t traffic_report[3];
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
 void create_network_load(uint16_t dest_addr, uint8_t repetitions);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
+
 
 
 uint16_t request_size(esp_zb_apsde_data_req_t *req) {
@@ -127,7 +129,16 @@ static void esp_show_route_table()
         ESP_LOGI(TAG_include," ");
     }
 }
+void increment_traffice_raport(uint16_t short_addr, esp_zb_network_traffic_raport_t *traffic_raport) {
 
+    for (int i = 0; i < 3; i++) {
+        if (traffic_raport[i].short_addr == short_addr) {
+            traffic_raport[i].traffic_count++;
+            return;
+        }
+    }
+
+}
 static void esp_show_route_record_table()
 {
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -182,13 +193,15 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     bool processed = false;
     if(ind.status == 0x00) {
         ping_count++;
+        
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
         //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
         ESP_LOGI("APSDE INDICATION",
                 "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
-                "destination address 0x%04hx, lqi %d, rx_time %d ms",
+                "destination address 0x%04hx, lqi %d, rx_time %d ms, security_status %d",
                 ping_count, ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
-                ind.lqi, ind.rx_time);
+                ind.lqi, ind.rx_time, ind.security_status);
+                increment_traffice_raport(ind.src_short_addr, traffic_report);
         processed = false;
     } else {
         byte_counter_in += sizeof(esp_zb_apsde_data_ind_t);
@@ -279,6 +292,29 @@ void create_ping(uint16_t dest_addr, bool show_log)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
+void zero_traffic_raport(esp_zb_network_traffic_raport_t *traffic_raport)
+{
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_route_info_t route = {};
+    
+    uint8_t index = 0;
+
+
+    while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) { 
+        traffic_raport[index].short_addr = route.dest_addr;
+        traffic_raport[index].traffic_count = 0;
+        index++;
+    }
+}
+
+void display_traffic_report(esp_zb_network_traffic_raport_t *traffic_raport)
+{
+    ESP_LOGI(TAG_include, "Traffic Report:");
+    for (int i = 0; i < 3; i++) {
+        ESP_LOGI(TAG_include, "Device 0x%04hx: %ld packets", traffic_raport[i].short_addr, traffic_raport[i].traffic_count);
+    }
+}
+
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
@@ -292,6 +328,8 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // create_ping_64(0x404ccafffe5fb4d4); // Example 64-bit address
         // vTaskDelay(pdMS_TO_TICKS(100));
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
+        display_traffic_report(traffic_report);
+        zero_traffic_raport(traffic_report);
     }
 }
 
@@ -301,6 +339,8 @@ bool deferred_driver_init(void)
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized ;
 }
+
+
 
 void refresh_routes(void)
 {
@@ -316,9 +356,7 @@ void refresh_routes(void)
 
 void send_traffic_report(void)
 {
-    esp_zb_network_traffic_report_t traffic_report = {
-        .traffic_count = 0, // Initialize traffic count
-    };
+
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
