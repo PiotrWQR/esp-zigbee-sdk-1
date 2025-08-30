@@ -52,3 +52,11 @@ typedef struct esp_zb_network_traffic_report_s {
     uint16_t short_addr;      //Short address of the reporting device
     uint32_t traffic_count; //Packets received
 } esp_zb_network_traffic_raport_t;
+
+
+typedef struct data_recived_s {
+    uint32_t start_time;
+    uint32_t end_time;
+        uint32_t failed_ping_count;
+    uint32_t successful_ping_count;
+} data_recived_t;

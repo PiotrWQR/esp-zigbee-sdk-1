@@ -192,10 +192,14 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     bool processed = false;
     if(ind.status == 0x00) {
-        ping_count++;
-        
+        if(ind.dst_endpoint == 10){
+            ping_count++;
+        }
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
         //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
+        if(ind.dst_endpoint==20){
+            ESP_LOGI("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, ((data_recived_t *)ind.asdu)->start_time, ((data_recived_t *)ind.asdu)->end_time, ((data_recived_t *)ind.asdu)->end_time - ((data_recived_t *)ind.asdu)->start_time);
+        }
         ESP_LOGI("APSDE INDICATION",
                 "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
                 "destination address 0x%04hx, lqi %d, rx_time %d ms, security_status %d",
@@ -339,8 +343,6 @@ bool deferred_driver_init(void)
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized ;
 }
-
-
 
 void refresh_routes(void)
 {
