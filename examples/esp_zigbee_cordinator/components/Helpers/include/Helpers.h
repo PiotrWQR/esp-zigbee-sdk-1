@@ -60,3 +60,9 @@ typedef struct data_recived_s {
         uint32_t failed_ping_count;
     uint32_t successful_ping_count;
 } data_recived_t;
+
+typedef struct ping_payload_s {
+    uint32_t seq_num;
+    uint32_t send_time;
+    uint8_t *payload;
+} ping_payload_t;

@@ -92,14 +92,14 @@ static void esp_show_neighbor_table()
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
-    
+
     ESP_LOGI(TAG_include,"Network Neighbors:");
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
         ESP_LOGI(TAG_include,"Index: %3d", itor);
         ESP_LOGI(TAG_include,"  Age: %3d", neighbor.age);
         ESP_LOGI(TAG_include,"  Neighbor: 0x%04hx", neighbor.short_addr);
         ESP_LOGI(TAG_include,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
-        ESP_LOGI(TAG_include,"  Type: %3s", dev_type_name[neighbor.device_type]);   
+        ESP_LOGI(TAG_include,"  Type: %3s", dev_type_name[neighbor.device_type]);
         ESP_LOGI(TAG_include,"  Rel: %c", rel_name[neighbor.relationship]);
         ESP_LOGI(TAG_include,"  Depth: %3d", neighbor.depth);
         ESP_LOGI(TAG_include,"  RSSI: %3d", neighbor.rssi);
@@ -107,7 +107,6 @@ static void esp_show_neighbor_table()
         ESP_LOGI(TAG_include,"  Cost: o:%d", neighbor.outgoing_cost);
         ESP_LOGI(TAG_include,"  Timeout coounter: %ld", neighbor.timeout_counter);
         ESP_LOGI(TAG_include,"  Device timeeout: %ld", neighbor.device_timeout);
-        
         ESP_LOGI(TAG_include," ");
     }
 }
@@ -192,13 +191,17 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     bool processed = false;
     if(ind.status == 0x00) {
-        if(ind.dst_endpoint == 10){
-            ping_count++;
-        }
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
         //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
         if(ind.dst_endpoint==20){
-            ESP_LOGI("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, ((data_recived_t *)ind.asdu)->start_time, ((data_recived_t *)ind.asdu)->end_time, ((data_recived_t *)ind.asdu)->end_time - ((data_recived_t *)ind.asdu)->start_time);
+            data_recived_t *data = (data_recived_t *)ind.asdu;
+            ESP_LOGI("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, data->start_time, data->end_time, data->end_time - data->start_time);
+        }
+        if(ind.dst_endpoint==10){
+            ping_count++;
+            ping_payload_t *ping = (ping_payload_t *)ind.asdu;
+            uint32_t rtt = esp_log_timestamp() - ping->send_time;
+            ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld, rtt %ld ms", ind.src_short_addr, ping->seq_num, ping->send_time, rtt);
         }
         ESP_LOGI("APSDE INDICATION",
                 "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
