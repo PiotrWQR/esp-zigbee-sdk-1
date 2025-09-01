@@ -18,6 +18,7 @@ void esp_zigbee_include_show_tables(void);
 void send_traffic_report(void);
 void refresh_routes(void);
 void traffic_reporter_init(void *pvParameters);
+void zero_traffic_raport(void);
 
 static const char *dev_type_name[] = {
     [ESP_ZB_DEVICE_TYPE_COORDINATOR] = "ZC",
@@ -44,25 +45,31 @@ static const char *route_state_name[] = {
 static const uint8_t aps_address_modes_size[] = {
     [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
     [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
-    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 3,
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 37,
     [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 9,
     [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
 };
-typedef struct esp_zb_network_traffic_report_s {
+typedef struct esp_zb_network_traffic_raport_s {
     uint16_t short_addr;      //Short address of the reporting device
+    bool is_active;
     uint32_t traffic_count; //Packets received
+    uint32_t max_ping_count;
+    uint32_t last_seq_num;
+    uint32_t seq_num;
+    uint32_t missed_packets;
 } esp_zb_network_traffic_raport_t;
 
 
 typedef struct data_recived_s {
     uint32_t start_time;
     uint32_t end_time;
-        uint32_t failed_ping_count;
+    uint32_t failed_ping_count;
     uint32_t successful_ping_count;
 } data_recived_t;
 
 typedef struct ping_payload_s {
     uint32_t seq_num;
     uint32_t send_time;
+    uint32_t max_ping_count;
     uint8_t *payload;
 } ping_payload_t;

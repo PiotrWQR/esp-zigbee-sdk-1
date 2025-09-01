@@ -20,7 +20,7 @@ static uint32_t byte_counter_in = 0;
 static uint32_t byte_count_out = 0;
 static uint32_t byte_count_in = 0;
 static uint32_t ping_count = 0;
-static esp_zb_network_traffic_raport_t traffic_report[3];
+static esp_zb_network_traffic_raport_t traffic_raport[10];
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
@@ -50,8 +50,7 @@ void traffic_reporter_init(void *pvParameters) {
         byte_count_out = byte_counter_out; // Store the current byte count
         byte_counter_out = 0; // Reset the counter after sending the report;
 
-
-    }    
+    }
 }
 
 
@@ -110,7 +109,6 @@ static void esp_show_neighbor_table()
         ESP_LOGI(TAG_include," ");
     }
 }
-
 //wyswietla trasy
 static void esp_show_route_table()
 {
@@ -128,16 +126,47 @@ static void esp_show_route_table()
         ESP_LOGI(TAG_include," ");
     }
 }
-void increment_traffice_raport(uint16_t short_addr, esp_zb_network_traffic_raport_t *traffic_raport) {
 
-    for (int i = 0; i < 3; i++) {
+void increment_traffic_raport(uint16_t short_addr, uint32_t max_ping_count ,uint32_t seq_num) {
+
+    uint8_t i = 0;
+    while (traffic_raport[i].is_active && i < 10) {
         if (traffic_raport[i].short_addr == short_addr) {
             traffic_raport[i].traffic_count++;
+            while(traffic_raport[i].last_seq_num < seq_num) {
+                ESP_LOGI(TAG_include, "Device 0x%04hx: missed packet %ld", traffic_raport[i].short_addr, traffic_raport[i].last_seq_num);
+                // traffic_raport[i].missed_packets++;
+                traffic_raport[i].last_seq_num++;
+            }
+
             return;
         }
     }
+    if(i < 10) {
+        traffic_raport[i].short_addr = short_addr;
+        traffic_raport[i].traffic_count = 1;
+        traffic_raport[i].is_active = true;
+        traffic_raport[i].max_ping_count = max_ping_count;
+    }
+    else {
+        traffic_raport[0].short_addr = short_addr;
+        traffic_raport[0].traffic_count = 1;
+        traffic_raport[0].is_active = true;
+        traffic_raport[0].max_ping_count = max_ping_count;
+    }
 
 }
+
+int get_traffic_raport_index(esp_zb_network_traffic_raport_t *traffic_raport, uint16_t short_addr)
+{
+    for (int i = 0; i < 10; i++) {
+        if (traffic_raport[i].short_addr == short_addr) {
+            return i;
+        }
+    }
+    return -1; // Not found
+}
+
 static void esp_show_route_record_table()
 {
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -187,6 +216,8 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
     }
 }
 
+
+
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     bool processed = false;
@@ -195,30 +226,28 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
         //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
         if(ind.dst_endpoint==20){
             data_recived_t *data = (data_recived_t *)ind.asdu;
-            ESP_LOGI("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, data->start_time, data->end_time, data->end_time - data->start_time);
+            ESP_LOGW("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, data->start_time, data->end_time, data->end_time - data->start_time);
         }
         if(ind.dst_endpoint==10){
             ping_count++;
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
-            uint32_t rtt = esp_log_timestamp() - ping->send_time;
-            ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld, rtt %ld ms", ind.src_short_addr, ping->seq_num, ping->send_time, rtt);
+            //increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
+            ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld", ind.src_short_addr, ping->seq_num, ping->send_time);
         }
         ESP_LOGI("APSDE INDICATION",
                 "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
                 "destination address 0x%04hx, lqi %d, rx_time %d ms, security_status %d",
                 ping_count, ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
                 ind.lqi, ind.rx_time, ind.security_status);
-                increment_traffice_raport(ind.src_short_addr, traffic_report);
         processed = false;
     } else {
-        byte_counter_in += sizeof(esp_zb_apsde_data_ind_t);
         ESP_LOGE("APSDE INDICATION", "Invalid status of APSDE-DATA indication, error code: %d", ind.status);
         processed = false;
     }
     return processed;
 }
 
-bool isCoordinator(uint16_t dest_addr) { 
+bool isCoordinator(uint16_t dest_addr) {
     return (dest_addr == 0x0000);
 }
 
@@ -245,7 +274,7 @@ void create_ping_64(uint64_t dest_addr)
     memcpy(req.dst_addr.addr_long, ieee_addr, sizeof(esp_zb_ieee_addr_t)); // Copy the 64-bit address
 
     for(uint8_t i = 0; i < data_length; i++) {
-        req.asdu[i] = i % 256; 
+        req.asdu[i] = i % 256;
     }
 
     ESP_LOGI(TAG_include, "Sending APS data request to 0x%016" PRIx64 " with %ld bytes", dest_addr, data_length);
@@ -291,7 +320,7 @@ void create_ping(uint16_t dest_addr, bool show_log)
         //xQueueAddToSet(apsde_data_requests_queue, &req);
         return;
     }
-        
+
 
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
@@ -299,26 +328,23 @@ void create_ping(uint16_t dest_addr, bool show_log)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
-void zero_traffic_raport(esp_zb_network_traffic_raport_t *traffic_raport)
+void zero_traffic_raport()
 {
-    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
-    esp_zb_nwk_route_info_t route = {};
-    
-    uint8_t index = 0;
 
-
-    while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) { 
-        traffic_raport[index].short_addr = route.dest_addr;
-        traffic_raport[index].traffic_count = 0;
-        index++;
+    for(uint8_t i = 0; i < 10; i++) {
+        traffic_raport[i].is_active = false;
+        traffic_raport[i].short_addr = 0;
+        traffic_raport[i].traffic_count = 0;
     }
 }
 
-void display_traffic_report(esp_zb_network_traffic_raport_t *traffic_raport)
+void display_traffic_report()
 {
     ESP_LOGI(TAG_include, "Traffic Report:");
-    for (int i = 0; i < 3; i++) {
-        ESP_LOGI(TAG_include, "Device 0x%04hx: %ld packets", traffic_raport[i].short_addr, traffic_raport[i].traffic_count);
+    int i =0;
+    while(traffic_raport[i].is_active && i < 10) {
+        ESP_LOGI(TAG_include, "Device 0x%04hx: %ld packets received, %ld packets lost, expected: %ld", traffic_raport[i].short_addr, traffic_raport[i].traffic_count , traffic_raport[i].max_ping_count- traffic_raport[i].traffic_count, traffic_raport[i].max_ping_count);
+        i++;
     }
 }
 
@@ -335,8 +361,8 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // create_ping_64(0x404ccafffe5fb4d4); // Example 64-bit address
         // vTaskDelay(pdMS_TO_TICKS(100));
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
-        display_traffic_report(traffic_report);
-        zero_traffic_raport(traffic_report);
+        display_traffic_report();
+        zero_traffic_raport();
     }
 }
 
@@ -365,10 +391,10 @@ void send_traffic_report(void)
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
-    
+
     const uint8_t traffic_report_endpoint = 70;
 
-    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) { 
+    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
     }
 
 }
