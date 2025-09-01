@@ -168,10 +168,14 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
 
+    esp_zb_platform_mac_config_t mac_config;
+    esp_zb_platform_mac_config_get(&mac_config);
+    ESP_LOGI(TAG, "Min: %d, Max: %d", mac_config.csma_min_be, mac_config.csma_max_be);
 
     esp_zb_nvram_erase_at_start(true);
     // esp_zb_nwk_set_link_status_period(0x40
-    esp_zb_set_tx_power(20);
+    esp_zb_set_tx_power(80);
+    //esp_zb_zdo_touchlink_set_rssi_threshold(ESP_ZB_TOUCHLINK_RSSI_THRESHOLD);
     ESP_ERROR_CHECK(zb_register_device());
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);

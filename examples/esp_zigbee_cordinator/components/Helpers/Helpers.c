@@ -141,6 +141,7 @@ void increment_traffic_raport(uint16_t short_addr, uint32_t max_ping_count ,uint
 
             return;
         }
+        i++;
     }
     if(i < 10) {
         traffic_raport[i].short_addr = short_addr;
@@ -231,7 +232,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
         if(ind.dst_endpoint==10){
             ping_count++;
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
-            //increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
+            increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
             ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld", ind.src_short_addr, ping->seq_num, ping->send_time);
         }
         ESP_LOGI("APSDE INDICATION",
