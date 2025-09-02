@@ -49,7 +49,6 @@ void traffic_reporter_init(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
         byte_count_out = byte_counter_out; // Store the current byte count
         byte_counter_out = 0; // Reset the counter after sending the report;
-
     }
 }
 
@@ -59,7 +58,36 @@ static switch_func_pair_t button_func_pair[] = {
 };
 
 
+void send_settings(uint16_t short_addr){
+    setting_change_t settings = {
+        .new_repeats = repeats,
+        .new_dest_addr = dest_addr,
+        .new_delay_ms = delay_ms,
+        .new_delay_tick = pdMS_TO_TICKS(delay_ms)
+    };
 
+    esp_zb_apsde_data_req_t req = {
+        .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
+        .dst_addr.addr_short = short_addr,
+        .dst_endpoint = 30,
+        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,
+        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,
+        .src_endpoint = 30,
+        .asdu_length = sizeof(setting_change_t),
+        .asdu = (uint8_t *)&settings,
+        .tx_options = 0,
+        .use_alias = false,
+        .alias_src_addr = 0,
+        .alias_seq_num = 0,
+        .radius = 2
+    };
+    esp_zb_lock_acquire(portMAX_DELAY);
+    esp_zb_aps_data_request(&req);
+    esp_zb_lock_release();
+
+
+
+}
 
 
 esp_zb_apsde_data_req_t create_aps_request(uint16_t dest_addr, uint8_t dst_endpoint, uint8_t src_endpoint,
@@ -218,7 +246,6 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 }
 
 
-
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     bool processed = false;
@@ -260,7 +287,7 @@ void create_ping_64(uint64_t dest_addr)
 
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT,
-        .dst_endpoint = 27,                                 // Example endpoint
+        .dst_endpoint = 30,                                 // Example endpoint
         .profile_id = ESP_ZB_AF_HA_PROFILE_ID,              // Example profile ID
         .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,          // Example cluster ID (On/Off cluster)
         .src_endpoint = 10,                                 // Example source endpoint

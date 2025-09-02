@@ -6,7 +6,9 @@
 #include <freertos/queue.h>
 
 
-
+static uint16_t repeats = 700;
+static uint16_t dest_addr = 0x0000;
+static uint32_t delay_ms = 30;
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
@@ -19,6 +21,7 @@ void send_traffic_report(void);
 void refresh_routes(void);
 void traffic_reporter_init(void *pvParameters);
 void zero_traffic_raport(void);
+void send_settings(uint16_t short_addr);
 
 static const char *dev_type_name[] = {
     [ESP_ZB_DEVICE_TYPE_COORDINATOR] = "ZC",
@@ -73,3 +76,10 @@ typedef struct ping_payload_s {
     uint32_t max_ping_count;
     uint8_t *payload;
 } ping_payload_t;
+
+typedef struct {
+    uint16_t new_repeats;
+    uint16_t new_dest_addr;
+    uint32_t new_delay_ms;
+    uint32_t new_delay_tick;
+} setting_change_t;

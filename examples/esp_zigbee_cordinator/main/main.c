@@ -117,6 +117,7 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
         ESP_LOGI(TAG, "Device authorized: LongAddr(0x%016" PRIx64 "), ShortAddr(0x%04hx), AuthorizationType(0x%x), AuthorizationStatus(0x%x)",
                  *(uint64_t *)device_authorized_params->long_addr, device_authorized_params->short_addr,
                  device_authorized_params->authorization_type, device_authorized_params->authorization_status);
+                 send_settings(device_authorized_params->short_addr);
         break;
     case ESP_ZB_ZDO_SIGNAL_LEAVE_INDICATION:
         esp_zb_zdo_signal_leave_indication_params_t *leave_params = (esp_zb_zdo_signal_leave_indication_params_t *)esp_zb_app_signal_get_params(p_sg_p);
