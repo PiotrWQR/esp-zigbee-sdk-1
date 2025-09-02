@@ -12,7 +12,9 @@
 #define ESP_MANUFACTURER_NAME "\x09""ESPRESSIF"      /* Customized manufacturer name */
 #define ESP_MODEL_IDENTIFIER "\x07"CONFIG_IDF_TARGET /* Customized model identifier */
 
-
+#define MIN_BACKOFF                    10                                    /* Minimum value of backoff exponent */
+#define MAX_BACKOFF_TIME               1000                                  /* Maximum value of backoff exponent */
+#define MAX_BACKOFF_RETRIES            5                                     /* Maximum number of backoff retries */
 /* Zigbee configuration */
 #define ESP_ZB_ZR_CONFIG()                                                          \
 {                                                                                   \
