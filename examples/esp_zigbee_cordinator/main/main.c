@@ -81,7 +81,6 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
                 ESP_LOGI(TAG, "Network steering was not successful (status: %s)", esp_err_to_name(err_status));
                 esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_STEERING, 1000);
             }
-
             break;
     case ESP_ZB_ZDO_SIGNAL_DEVICE_ANNCE:
             dev_annce_params= (esp_zb_zdo_signal_device_annce_params_t *)esp_zb_app_signal_get_params(p_sg_p);
@@ -169,7 +168,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
 
-    esp_zb_platform_mac_config_t mac_config = {
+    const esp_zb_platform_mac_config_t mac_config = {
         .csma_min_be = MIN_BACKOFF,
         .csma_max_be = MAX_BACKOFF_TIME,
         .csma_max_backoffs = MAX_BACKOFF_RETRIES

@@ -63,7 +63,10 @@ void send_settings(uint16_t short_addr){
         .new_repeats = repeats,
         .new_dest_addr = dest_addr,
         .new_delay_ms = delay_ms,
-        .new_delay_tick = pdMS_TO_TICKS(delay_ms)
+        .new_delay_tick = pdMS_TO_TICKS(delay_ms),
+        .csma_min_be = MIN_BACKOFF,
+        .csma_max_be = MAX_BACKOFF_TIME,
+        .csma_max_backoffs = MAX_BACKOFF_RETRIES
     };
 
     esp_zb_apsde_data_req_t req = {
@@ -162,7 +165,7 @@ void increment_traffic_raport(uint16_t short_addr, uint32_t max_ping_count ,uint
         if (traffic_raport[i].short_addr == short_addr) {
             traffic_raport[i].traffic_count++;
             while(traffic_raport[i].last_seq_num < seq_num) {
-                ESP_LOGI(TAG_include, "Device 0x%04hx: missed packet %ld", traffic_raport[i].short_addr, traffic_raport[i].last_seq_num);
+                //ESP_LOGI(TAG_include, "Device 0x%04hx: missed packet %ld", traffic_raport[i].short_addr, traffic_raport[i].last_seq_num);
                 // traffic_raport[i].missed_packets++;
                 traffic_raport[i].last_seq_num++;
             }
