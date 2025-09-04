@@ -5,7 +5,7 @@
 #include "esp_zigbee_type.h"
 #include <freertos/queue.h>
 
-#define MIN_BACKOFF                    1                                    /* Minimum value of backoff exponent */
+#define MIN_BACKOFF                    4                                    /* Minimum value of backoff exponent */
 #define MAX_BACKOFF_TIME               5                                    /* Maximum value of backoff exponent */
 #define MAX_BACKOFF_RETRIES            4                                    /* Maximum number of backoff retries */
 
@@ -40,14 +40,12 @@ static const char rel_name[] = {
     [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = 'c', /* Previous Child */
     [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = 'u', /* Unauthenticated Child */
 };
-
 static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_ACTIVE] = "Active",
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_UNDERWAY] = "Disc",
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED] = "Fail",
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
-    
 static const uint8_t aps_address_modes_size[] = {
     [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
     [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
@@ -64,7 +62,6 @@ typedef struct esp_zb_network_traffic_raport_s {
     uint32_t seq_num;
     uint32_t missed_packets;
 } esp_zb_network_traffic_raport_t;
-
 
 typedef struct data_recived_s {
     uint32_t start_time;
