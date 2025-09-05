@@ -261,9 +261,9 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
         }
         if(ind.dst_endpoint==10){
             ping_count++;
-            if(ping_count % 100 == 0) {
-                ESP_ERROR_CHECK(esp_task_wdt_reset());
-            }
+            // if(ping_count % 100 == 0) {
+            //     ESP_ERROR_CHECK(esp_task_wdt_reset());
+            // }
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
             increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
             ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld", ind.src_short_addr, ping->seq_num, ping->send_time);

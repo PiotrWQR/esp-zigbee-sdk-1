@@ -9,6 +9,7 @@
 #define ESP_ZB_TOUCHLINK_RSSI_THRESHOLD   -101                                 /* Touchlink RSSI threshold */
 //#define ESP_ZB_SECONDARY_CHANNEL_MASK     (1l << 20)
 //#define ESP_ZB_PRIMARY_CHANNEL_MASK         ESP_ZB_TRANSCEIVER_ALL_CHANNELS_MASK
+#define ESP_ZB_SECUR_MIN_LQI               0                                      
 
 #define ESP_MANUFACTURER_NAME "\x09""ESPRESSIF"      /* Customized manufacturer name */
 #define ESP_MODEL_IDENTIFIER "\x07"CONFIG_IDF_TARGET /* Customized model identifier */

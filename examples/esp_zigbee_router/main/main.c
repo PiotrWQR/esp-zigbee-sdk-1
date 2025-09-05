@@ -171,6 +171,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     ESP_ERROR_CHECK(zb_register_device());
     esp_zb_secur_link_key_exchange_required_set(true);
+    esp_zb_secur_network_min_join_lqi_set(ESP_ZB_SECUR_MIN_LQI);
 
     ESP_ERROR_CHECK(esp_zb_start(false));
     esp_zb_stack_main_loop();
