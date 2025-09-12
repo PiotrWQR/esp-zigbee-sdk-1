@@ -45,4 +45,27 @@ static const char *route_state_name[] = {
 //     [ESP_ZB_ZCL_STATUS_NOT_FOUND] = "Not Found",
 // };
 
+typedef struct neighbor_info_s{
+    uint16_t short_addr;
+    uint64_t ieee_addr;
+    uint8_t device_type;
+    uint8_t relationship;
+    uint8_t depth;
+    uint8_t lqi;
+    uint8_t outgoing_cost;
+    uint8_t rssi;
+} neighbor_info_t;
+
+typedef struct route_info_s {
+    uint16_t dest_addr;
+    uint16_t next_hop;
+    uint8_t flags;
+} route_info_t;
+typedef struct topology_report_s {
+    esp_zb_ieee_addr_t source_ieee_addr;
+    int16_t neighbor_count;
+    neighbor_info_t neighbors[10];
+    int16_t routes_count;
+    route_info_t routes[10];
+} topology_report_t;
 

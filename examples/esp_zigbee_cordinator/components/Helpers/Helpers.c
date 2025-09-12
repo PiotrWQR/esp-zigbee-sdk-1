@@ -26,7 +26,7 @@ void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
 void create_network_load(uint16_t dest_addr, uint8_t repetitions);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
-
+void send_indicator_toall(void);
 
 
 uint16_t request_size(esp_zb_apsde_data_req_t *req) {
@@ -268,6 +268,21 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
             ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld", ind.src_short_addr, ping->seq_num, ping->send_time);
         }
+        if(ind.dst_endpoint==32){
+            topology_report_t *topology = (topology_report_t *)ind.asdu;
+            ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", " Topology report received from 0x%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x: neighbor count %d, routes count %d", topology->ieee_addr[7], topology->ieee_addr[6],topology->ieee_addr[5],
+            topology->ieee_addr[4],topology->ieee_addr[3],topology->ieee_addr[2],topology->ieee_addr[1],topology->ieee_addr[0]
+                , topology->neighbor_count, topology->routes_count);
+            for(uint16_t i = 0; i < topology->neighbor_count; i++) {
+                neighbor_info_t *neighbor = &topology->neighbors[i];
+                ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Neighbor %d:, short_addr 0x%04hx, lqi %d, relationship %d, device type %d, rssi %d, outgoing cost: %d", 
+                    i, neighbor->short_addr, neighbor->lqi, neighbor->relationship, neighbor->device_type, neighbor->rssi, neighbor->outgoing_cost);
+            }
+            for(uint16_t i = 0; i < topology->routes_count; i++) {
+                route_info_t *route = &topology->routes[i];
+                ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Route %d: dest addr 0x%04hx, next hop 0x%04hx", i, route->dest_addr, route->next_hop);
+            }
+        }
         ESP_LOGI("APSDE INDICATION",
                 "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
                 "destination address 0x%04hx, lqi %d, rx_time %d ms, security_status %d",
@@ -325,13 +340,13 @@ void create_ping(uint16_t dest_addr, bool show_log)
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
         .dst_addr.addr_short = dest_addr,
-        .dst_endpoint = 10,                          // Example endpoint
-        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,      // Example profile ID
-        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,  // Example cluster ID (On/Off cluster)
+        .dst_endpoint = 32,                          // Example endpoint
+        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,       // Example profile ID
+        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,   // Example cluster ID (On/Off cluster)
         .src_endpoint = 10,                          // Example source endpoint
         .asdu_length = data_length,                  // No payload for ping
         .asdu = malloc(data_length * sizeof(uint8_t)), // Allocate memory for ASDU if needed
-        .tx_options = 0x04,                            // Example transmission options
+        .tx_options = 0x04 | 0x08,                   // Example transmission options
         .use_alias = false,
         .alias_src_addr = 0,
         .alias_seq_num = 0,
@@ -354,7 +369,6 @@ void create_ping(uint16_t dest_addr, bool show_log)
         //xQueueAddToSet(apsde_data_requests_queue, &req);
         return;
     }
-
 
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
@@ -395,6 +409,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // create_ping_64(0x404ccafffe5fb4d4); // Example 64-bit address
         // vTaskDelay(pdMS_TO_TICKS(100));
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
+        send_indicator_toall();
         display_traffic_report();
         zero_traffic_raport();
     }
@@ -431,4 +446,17 @@ void send_traffic_report(void)
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
     }
 
+}
+
+
+void send_indicator_toall(void)
+{
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_neighbor_info_t neighbor = {};
+
+    ESP_LOGI(TAG_include, "Sending indicator to all neighbors:");
+    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
+        create_ping(neighbor.short_addr, true);
+        vTaskDelay(pdMS_TO_TICKS(100)); // Delay to avoid flooding the network
+    }
 }

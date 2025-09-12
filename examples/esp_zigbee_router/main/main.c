@@ -166,7 +166,10 @@ static void esp_zb_task(void *pcParameters)
     //esp_zb_zdo_touchlink_set_rssi_threshold(ESP_ZB_TOUCHLINK_RSSI_THRESHOLD);
     esp_zb_set_tx_power(20); /* dBm */
     esp_zb_core_action_handler_register(zb_action_handler);
+    
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
+    esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
+    esp_zb_set_channel_mask(ESP_ZB_CHANNEL_MASK);
     //esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     ESP_ERROR_CHECK(zb_register_device());
@@ -204,5 +207,6 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
-    xTaskCreate(action_check, "action_check", 4096, NULL, 5, NULL);
+    //xTaskCreate(action_check, "action_check", 4096, NULL, 5, NULL);
+    //xTaskCreate(up, "apsde_data_print", 4096, NULL, 5, NULL);
 }
