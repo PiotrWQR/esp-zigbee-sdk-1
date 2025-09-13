@@ -353,7 +353,7 @@ void create_ping(uint16_t dest_addr, bool show_log)
         .radius = 3,                                 // Example radius
     };
 
-    req.dst_endpoint = 27;
+    //req.dst_endpoint = 27;
     if (req.asdu == NULL) {
         ESP_LOGE(TAG_include, "Failed to allocate memory for ASDU");
         return;
