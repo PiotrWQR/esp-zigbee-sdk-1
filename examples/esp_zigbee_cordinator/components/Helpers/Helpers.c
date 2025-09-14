@@ -275,8 +275,8 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
                 , topology->neighbor_count, topology->routes_count);
             for(uint16_t i = 0; i < topology->neighbor_count; i++) {
                 neighbor_info_t *neighbor = &topology->neighbors[i];
-                ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Neighbor %d:, short_addr 0x%04hx, lqi %d, relationship %d, device type %d, rssi %d, outgoing cost: %d", 
-                    i, neighbor->short_addr, neighbor->lqi, neighbor->relationship, neighbor->device_type, neighbor->rssi, neighbor->outgoing_cost);
+                ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Neighbor %d:, short_addr 0x%04hx, lqi %d, relationship %d, device type %d, rssi %d, outgoing cost: %d, ieee addr: 0x%016" PRIx64"", 
+                    i, neighbor->short_addr, neighbor->lqi, neighbor->relationship, neighbor->device_type, neighbor->rssi, neighbor->outgoing_cost, neighbor->ieee_addr);
             }
             for(uint16_t i = 0; i < topology->routes_count; i++) {
                 route_info_t *route = &topology->routes[i];

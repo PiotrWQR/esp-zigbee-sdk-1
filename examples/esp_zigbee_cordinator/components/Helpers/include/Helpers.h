@@ -9,9 +9,9 @@
 #define MAX_BACKOFF_TIME               5                                    /* Maximum value of backoff exponent */
 #define MAX_BACKOFF_RETRIES            4                                    /* Maximum number of backoff retries */
 
-static uint16_t repeats = 120;
+static uint16_t repeats = 40;
 static uint16_t dest_addr = 0x0000;
-static uint32_t delay_ms = 100;
+static uint32_t delay_ms = 1000;
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
