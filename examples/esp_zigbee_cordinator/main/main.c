@@ -191,6 +191,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
     esp_zb_secur_network_min_join_lqi_set(ESP_ZB_MIN_JOIN_LQI);
     ESP_ERROR_CHECK(esp_zb_aps_set_fragment_interframe_delay(2));
+    esp_zb_set_rx_on_when_idle(true);
 
     ESP_ERROR_CHECK(esp_zb_start(false));
     zero_traffic_raport();
