@@ -7,7 +7,7 @@
 
 #define MIN_BACKOFF                    4                                    /* Minimum value of backoff exponent */
 #define MAX_BACKOFF_TIME               5                                    /* Maximum value of backoff exponent */
-#define MAX_BACKOFF_RETRIES            4                                    /* Maximum number of backoff retries */
+#define MAX_BACKOFF_RETRIES            10                                   /* Maximum number of backoff retries */
 
 static uint16_t repeats = 40;
 static uint16_t dest_addr = 0x0000;

@@ -10,7 +10,7 @@
 static const char *TAG_include = "esp_zigbee_include";
 
 void send_topology_report(void);
-
+//wysłanie wiadomości o trasach i sąsiedztwie do koordynatora
 void send_topology_report(){
     topology_report_t report = {0};
     report.neighbor_count = 0;
@@ -77,7 +77,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
             processed = true;
         }
         if(ind.dst_endpoint == 32){
-            send_topology_report();
+            send_topology_report(); ///wysłąnie wiadomośći o trasach i sąsiedztwie do koordynatora
         }
 
     } else {
@@ -93,21 +93,42 @@ static void esp_show_neighbor_table()
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
+    const char *TAG = "Neighbor Table";
 
-    ESP_LOGI(TAG_include,"ZigBee Network Neighbors:");
+    ESP_LOGI(TAG,"ZigBee Network Neighbors:");
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        ESP_LOGI(TAG_include,"Index: %3d", itor);
-        ESP_LOGI(TAG_include,"  Age: %3d", neighbor.age);
-        ESP_LOGI(TAG_include,"  Neighbor: 0x%04hx", neighbor.short_addr);
-        ESP_LOGI(TAG_include,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
-        ESP_LOGI(TAG_include,"  Type: %3s", dev_type_name[neighbor.device_type]);   
-        ESP_LOGI(TAG_include,"  Rel: %c", rel_name[neighbor.relationship]);
-        ESP_LOGI(TAG_include,"  Depth: %3d", neighbor.depth);
-        ESP_LOGI(TAG_include,"  LQI: %3d", neighbor.lqi);
-        ESP_LOGI(TAG_include,"  Cost: o:%d", neighbor.outgoing_cost);
+        ESP_LOGI(TAG,"Index: %3d", itor);
+        ESP_LOGI(TAG,"  Age: %3d", neighbor.age);
+        ESP_LOGI(TAG,"  Neighbor: 0x%04hx", neighbor.short_addr);
+        ESP_LOGI(TAG,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
+        ESP_LOGI(TAG,"  Type: %3s", dev_type_name[neighbor.device_type]);   
+        ESP_LOGI(TAG,"  Rel: %c", rel_name[neighbor.relationship]);
+        ESP_LOGI(TAG,"  Depth: %3d", neighbor.depth);
+        ESP_LOGI(TAG,"  LQI: %3d", neighbor.lqi);
+        ESP_LOGI(TAG,"  Cost: o:%d", neighbor.outgoing_cost);
 
     }
-    ESP_LOGI(TAG_include," ");
+    ESP_LOGI(TAG," ");
+}
+
+void esp_show_record_route_table()
+{   
+    esp_zb_nwk_route_record_info_t route_record ={0};
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    const char *TAG = "Record Route Table";
+
+    ESP_LOGI(TAG,"Zigbee Network Record Routes:");
+    while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route_record)) {
+        ESP_LOGI(TAG,"Index: %3d", itor);
+        ESP_LOGI(TAG,"  DestAddr: 0x%04hx", route_record.dest_address);
+        ESP_LOGI(TAG,"  NextHop: 0x%04hx", route_record.expiry);
+        ESP_LOGI(TAG,"  Expiry: %4d", route_record.expiry);
+        ESP_LOGI(TAG,"  State: %6s", route_state_name[route_record.relay_count]);
+        for(int i = 0; i < route_record.relay_count; i++) {
+            ESP_LOGI(TAG,"  Path[%d]: 0x%04hx", i, route_record.path[i]);
+        }
+        ESP_LOGI(TAG," ");
+    }
 }
 
 //wyswietla trasy
@@ -135,6 +156,7 @@ void esp_zigbee_include_show_tables(void)
     ESP_LOGI(TAG_include, "Zigbee Network Tables:");
     esp_show_neighbor_table();
     esp_show_route_table();
+    esp_show_record_route_table();
 }
 
 static switch_func_pair_t button_func_pair[] = {
