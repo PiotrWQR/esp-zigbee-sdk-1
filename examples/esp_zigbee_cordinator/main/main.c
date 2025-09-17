@@ -170,8 +170,8 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_init(&zb_nwk_cfg);
 
     const esp_zb_platform_mac_config_t mac_config = {
-        .csma_min_be = MIN_BACKOFF,
-        .csma_max_be = MAX_BACKOFF_TIME,
+        .csma_min_be = MIN_BACKOFF_EXPONENT,
+        .csma_max_be = MAX_BACKOFF_EXPONENT,
         .csma_max_backoffs = MAX_BACKOFF_RETRIES
     };
     ESP_ERROR_CHECK(esp_zb_platform_mac_config_set(&mac_config));
@@ -179,16 +179,18 @@ static void esp_zb_task(void *pcParameters)
     ESP_LOGI(TAG, "Min: %d, Max: %d, Retries: %d", mac_config.csma_min_be, mac_config.csma_max_be, mac_config.csma_max_backoffs);
 
     esp_zb_nvram_erase_at_start(true);
-    // esp_zb_nwk_set_link_status_period(0x40
     esp_zb_set_tx_power(20);
-    //esp_zb_zdo_touchlink_set_rssi_threshold(ESP_ZB_TOUCHLINK_RSSI_THRESHOLD);
+
     ESP_ERROR_CHECK(zb_register_device());
+
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
     esp_zb_core_action_handler_register(zb_action_handler);
+
     esp_zb_set_channel_mask(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
+    
     esp_zb_secur_network_min_join_lqi_set(ESP_ZB_MIN_JOIN_LQI);
     ESP_ERROR_CHECK(esp_zb_aps_set_fragment_interframe_delay(2));
     esp_zb_set_rx_on_when_idle(true);

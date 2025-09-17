@@ -5,8 +5,8 @@
 #include "esp_zigbee_type.h"
 #include <freertos/queue.h>
 
-#define MIN_BACKOFF                    4                                    /* Minimum value of backoff exponent */
-#define MAX_BACKOFF_TIME               5                                    /* Maximum value of backoff exponent */
+#define MIN_BACKOFF_EXPONENT           4                                    /* Minimum value of backoff exponent */
+#define MAX_BACKOFF_EXPONENT           5                                    /* Maximum value of backoff exponent */
 #define MAX_BACKOFF_RETRIES            5                                   /* Maximum number of backoff retries */
 
 static uint16_t repeats = 40;
