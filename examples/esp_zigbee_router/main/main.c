@@ -158,7 +158,7 @@ static esp_err_t zb_register_device(void){
 
 static void esp_zb_task(void *pcParameters)
 {
-    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(200));
+    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(250));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
 
@@ -211,7 +211,7 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
-    xTaskCreate(esp_zb_task, "Zigbee_main", 2*4096, NULL, 5, NULL);
+    xTaskCreate(esp_zb_task, "Zigbee_main", 3*4096, NULL, 6, NULL);
     //xTaskCreate(action_check, "action_check", 4096, NULL, 5, NULL);
     //xTaskCreate(up, "apsde_data_print", 4096, NULL, 5, NULL);
 }
