@@ -55,12 +55,12 @@ void traffic_reporter_init(void *pvParameters) {
     }
 }
 
-
 static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 
 
+//Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
 void send_settings(uint16_t short_addr){
     setting_change_t settings = {
         .new_repeats = repeats,
@@ -71,7 +71,6 @@ void send_settings(uint16_t short_addr){
         .csma_max_be = MAX_BACKOFF_EXPONENT,
         .csma_max_backoffs = MAX_BACKOFF_RETRIES
     };
-
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
         .dst_addr.addr_short = short_addr,
@@ -90,9 +89,6 @@ void send_settings(uint16_t short_addr){
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
-
-
-
 }
 
 

@@ -6,7 +6,7 @@
 #include <freertos/queue.h>
 
 #define MIN_BACKOFF_EXPONENT           4                                    /* Minimum value of backoff exponent */
-#define MAX_BACKOFF_EXPONENT           5                                    /* Maximum value of backoff exponent */
+#define MAX_BACKOFF_EXPONENT           8                                    /* Maximum value of backoff exponent */
 #define MAX_BACKOFF_RETRIES            5                                   /* Maximum number of backoff retries */
 
 static uint16_t repeats = 40;
@@ -50,7 +50,7 @@ static const uint8_t aps_address_modes_size[] = {
     [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
     [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
     [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 37,
-    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 9,
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 49,
     [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
 };
 typedef struct esp_zb_network_traffic_raport_s {

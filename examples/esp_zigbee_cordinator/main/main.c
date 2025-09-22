@@ -166,7 +166,7 @@ static esp_err_t zb_register_device(void)
 
 static void esp_zb_task(void *pcParameters)
 {
-    //ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(200));
+    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(200));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
 
