@@ -8,6 +8,8 @@
 #include "create_endpoints.c"
 #include "Helpers.h"
 #include "aps/esp_zigbee_aps.h"
+#include "uart_interface.h"
+
 
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
@@ -215,6 +217,7 @@ void app_main(void)
     };
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
-    xTaskCreate(esp_zb_task, "Zigbee_main", 8194, NULL, 5, NULL);
+    xTaskCreate(esp_zb_task, "Zigbee_main", 8*1024, NULL, 5, NULL);
+    //xTaskCreate(rx_task, "uart_rx_task", 2*1024, NULL, 5, NULL);
     //xTaskCreate(esp_helper_task, "zigbee_traffic_reporter", 4096, NULL, 5, NULL);
 }
