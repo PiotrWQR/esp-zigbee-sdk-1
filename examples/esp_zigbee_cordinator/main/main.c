@@ -180,6 +180,7 @@ static void esp_zb_task(void *pcParameters)
     ESP_ERROR_CHECK(esp_zb_platform_mac_config_set(&mac_config));
     esp_zb_platform_mac_config_get(&mac_config);
     ESP_LOGI(TAG, "Min: %d, Max: %d, Retries: %d", mac_config.csma_min_be, mac_config.csma_max_be, mac_config.csma_max_backoffs);
+    printf("Printf test \n");
 
     esp_zb_nvram_erase_at_start(true);
     esp_zb_set_tx_power(20);
@@ -217,6 +218,8 @@ void app_main(void)
     };
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
+
+    init();
     xTaskCreate(esp_zb_task, "Zigbee_main", 8*1024, NULL, 5, NULL);
     //xTaskCreate(rx_task, "uart_rx_task", 2*1024, NULL, 5, NULL);
     //xTaskCreate(esp_helper_task, "zigbee_traffic_reporter", 4096, NULL, 5, NULL);
