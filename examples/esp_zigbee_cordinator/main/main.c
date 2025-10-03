@@ -219,8 +219,8 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
 
-    init();
     xTaskCreate(esp_zb_task, "Zigbee_main", 8*1024, NULL, 5, NULL);
-    //xTaskCreate(rx_task, "uart_rx_task", 2*1024, NULL, 5, NULL);
+    init();
+    xTaskCreate(rx_task, "uart_rx_task", 2*1024, NULL, 6, NULL);
     //xTaskCreate(esp_helper_task, "zigbee_traffic_reporter", 4096, NULL, 5, NULL);
 }
