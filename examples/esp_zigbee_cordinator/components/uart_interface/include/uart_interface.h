@@ -2,7 +2,7 @@
 #define CONFIG_EXAMPLE_UART_TXD 17
 #define CONFIG_EXAMPLE_UART_RXD 16
 
-void init(void);
+void uart_interface_init(void);
 void rx_task(void *arg);
 void tx_task(void *arg);
 

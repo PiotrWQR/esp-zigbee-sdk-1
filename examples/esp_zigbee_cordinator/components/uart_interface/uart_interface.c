@@ -20,9 +20,8 @@ void realize_host_request(cJSON *json);
 
 // Setup UART buffered IO with event queue
 static const int  uart_num = UART_NUM_1;
-static const int RX_BUF_SIZE = 1024;
+static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1024*2;
-const int uart_buffer_size = (1024 * 2);
 QueueHandle_t uart_queue;
 QueueHandle_t uart_tx_queue;
 
@@ -32,8 +31,9 @@ QueueHandle_t uart_tx_queue;
 #define TXD_PIN (CONFIG_EXAMPLE_UART_TXD)
 #define RXD_PIN (CONFIG_EXAMPLE_UART_RXD)
 
-void init(void)
+void uart_interface_init(void)
 {
+    ESP_LOGI("uart_interface", "Initializing UART");
     const uart_config_t uart_config = {
         .baud_rate = CONFIG_EXAMPLE_UART_BAUD_RATE,
         .data_bits = UART_DATA_8_BITS,
@@ -42,12 +42,15 @@ void init(void)
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT,
     };
-    
+
     ESP_LOGI("uart_interface", "UART init with TXD pin: %d, RXD pin: %d, baud rate: %d", TXD_PIN, RXD_PIN, uart_config.baud_rate);
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE * 2, TX_BUF_SIZE * 2, 0, NULL, 0));
+    vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for a second to let the UART settle
+    ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE * 2, TX_BUF_SIZE * 2, 10, &uart_queue, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
     uart_set_pin(uart_num, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     uart_tx_queue = xQueueCreate(10, sizeof(char*));
+
+    ESP_LOGI("uart_interface", "UART initialized");
 }
 
 int sendData(const char* logName, const char* data)
@@ -63,10 +66,11 @@ void tx_task(void *arg)
     //uart_event_t event;
     static const char *TX_TASK_TAG = "TX_TASK";
     // esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
-    const char* data;
+    char* data;
     while (1) {
         if(xQueueReceive(uart_tx_queue, (void * )&data, (TickType_t)portMAX_DELAY)) {
-            ESP_LOGI(TX_TASK_TAG, "Received data: %s", data);
+            sprintf(data, "\r\n");
+            ESP_LOGI(TX_TASK_TAG, "Data to send: %s", data);
             sendData(TX_TASK_TAG, data);
             free(data);
         }
@@ -215,6 +219,7 @@ void realize_host_request(cJSON *json){
             ESP_ERROR_CHECK(esp_zb_platform_mac_config_set(&mac_config));
             send_settings(0xffff); //Send settings to all devices
         }
+        break;
     case request_type_topology:
         {
             char* json_string = create_json_topology();

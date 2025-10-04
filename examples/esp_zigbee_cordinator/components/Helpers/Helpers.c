@@ -12,7 +12,7 @@
 #include <memory.h>
 #include "esp_err.h"
 #include "esp_task_wdt.h"
-
+#include "cJSON.h"
 static const char *TAG_include = "Helpers";
 
 static uint32_t byte_counter_out = 0;
@@ -21,12 +21,17 @@ static uint32_t byte_count_out = 0;
 static uint32_t byte_count_in = 0;
 static uint32_t ping_count = 0;
 static esp_zb_network_traffic_raport_t traffic_raport[10];
+static cJSON *topology_json = NULL;
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
 void create_network_load(uint16_t dest_addr, uint8_t repetitions);
 void create_network_load_64bit(uint64_t dest_addr, uint8_t repetitions);
 void send_indicator_toall(void);
+
+void helpers_init(void) {
+    topology_json = cJSON_CreateObject();
+}
 
 bool isCoordinator(uint16_t dest_addr) {
     return (dest_addr == 0x0000);
@@ -43,21 +48,10 @@ uint16_t request_size(esp_zb_apsde_data_req_t *req) {
     return size;
 }
 
-void traffic_reporter_init(void *pvParameters) {
-    byte_counter_out = 0;
-    byte_count_out = 0;
-    static uint16_t bandwidth = 10;
-    while (1) {
-        ESP_LOGI(TAG_include, "Byte count in last 10 seconds: %ld", byte_count_out);
-        vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
-        byte_count_out = byte_counter_out; // Store the current byte count
-        byte_counter_out = 0; // Reset the counter after sending the report;
-    }
-}
-
 static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
+
 
 
 //Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
@@ -246,15 +240,45 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", " Topology report received from 0x%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x: neighbor count %d, routes count %d", topology->ieee_addr[7], topology->ieee_addr[6],topology->ieee_addr[5],
             topology->ieee_addr[4],topology->ieee_addr[3],topology->ieee_addr[2],topology->ieee_addr[1],topology->ieee_addr[0]
                 , topology->neighbor_count, topology->routes_count);
+                cJSON *topology_report = cJSON_CreateObject();
+                cJSON_AddNumberToObject(topology_report, "neighbor_count", topology->neighbor_count);
+                cJSON_AddNumberToObject(topology_report, "routes_count", topology->routes_count);
+                cJSON *neighbors = cJSON_CreateArray();
             for(uint16_t i = 0; i < topology->neighbor_count; i++) {
                 neighbor_info_t *neighbor = &topology->neighbors[i];
+                cJSON *neighbor_json = cJSON_CreateObject();
+                cJSON_AddNumberToObject(neighbor_json, "short_addr", neighbor->short_addr);
+                cJSON_AddNumberToObject(neighbor_json, "lqi", neighbor->lqi);
+                cJSON_AddNumberToObject(neighbor_json, "relationship", neighbor->relationship);
+                cJSON_AddNumberToObject(neighbor_json, "device_type", neighbor->device_type);
+                cJSON_AddNumberToObject(neighbor_json, "rssi", neighbor->rssi);
+                cJSON_AddNumberToObject(neighbor_json, "outgoing_cost", neighbor->outgoing_cost);
+                cJSON_AddNumberToObject(neighbor_json, "ieee_addr", neighbor->ieee_addr);
+                cJSON_AddItemToArray(neighbors, neighbor_json);
                 ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Neighbor %d:, short_addr 0x%04hx, lqi %d, relationship %d, device type %d, rssi %d, outgoing cost: %d, ieee addr: 0x%016" PRIx64"", 
                     i, neighbor->short_addr, neighbor->lqi, neighbor->relationship, neighbor->device_type, neighbor->rssi, neighbor->outgoing_cost, neighbor->ieee_addr);
             }
+            cJSON_AddItemToObject(topology_report, "neighbors", neighbors);
+            cJSON *routes = cJSON_CreateArray();
             for(uint16_t i = 0; i < topology->routes_count; i++) {
                 route_info_t *route = &topology->routes[i];
+                cJSON *route_json = cJSON_CreateObject();
+                cJSON_AddNumberToObject(route_json, "dest_addr", route->dest_addr);
+                cJSON_AddNumberToObject(route_json, "next_hop", route->next_hop);
+                cJSON_AddItemToArray(routes, route_json);
                 ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Route %d: dest addr 0x%04hx, next hop 0x%04hx", i, route->dest_addr, route->next_hop);
             }
+            cJSON_AddItemToObject(topology_report, "routes", routes);
+            char ieee_str[24] = "%s";
+            sprintf(
+                ieee_str,
+                "%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
+                topology->ieee_addr[7], topology->ieee_addr[6], topology->ieee_addr[5],
+                topology->ieee_addr[4], topology->ieee_addr[3], topology->ieee_addr[2],
+                topology->ieee_addr[1], topology->ieee_addr[0]
+            );
+            printf("IEEE Address: %s\n", ieee_str);
+            cJSON_AddItemToObject(topology_json, ieee_str, topology_report);
         }
         ESP_LOGI("APSDE INDICATION",
                 "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
@@ -299,10 +323,10 @@ void create_ping(uint16_t dest_addr, bool show_log)
         }
     }
     if(show_log){
-    ESP_LOGI(TAG_include, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
+        ESP_LOGI(TAG_include, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
     }
-    if (isCoordinator(dest_addr)) {
-        //xQueueAddToSet(apsde_data_requests_queue, &req);
+    if (dest_addr == 0x0000) {
+        free(req.asdu); // Free the allocated memory for ASDU
         return;
     }
 

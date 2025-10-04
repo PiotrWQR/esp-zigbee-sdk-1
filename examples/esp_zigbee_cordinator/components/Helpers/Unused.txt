@@ -82,3 +82,17 @@ esp_zb_apsde_data_req_t create_aps_request(uint16_t dest_addr, uint8_t dst_endpo
     };
     return req;
 }
+
+
+
+void traffic_reporter_init(void *pvParameters) {
+    byte_counter_out = 0;
+    byte_count_out = 0;
+    static uint16_t bandwidth = 10;
+    while (1) {
+        ESP_LOGI(TAG_include, "Byte count in last 10 seconds: %ld", byte_count_out);
+        vTaskDelay(pdMS_TO_TICKS(10000)); // Wait for 10 seconds
+        byte_count_out = byte_counter_out; // Store the current byte count
+        byte_counter_out = 0; // Reset the counter after sending the report;
+    }
+}
