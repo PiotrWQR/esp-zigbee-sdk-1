@@ -36,7 +36,7 @@ void helpers_init(void) {
 bool isCoordinator(uint16_t dest_addr) {
     return (dest_addr == 0x0000);
 }
-
+//ta funkcja ma wyśetlić ile bajtów zostało wysłanych, jednal istnieje problem z nie zawsze oczywistą wielkością nagłówka oraz stylu fragmentacji
 uint16_t request_size(esp_zb_apsde_data_req_t *req) {
     if (!req) {
         return 0;
@@ -86,7 +86,7 @@ void send_settings(uint16_t short_addr){
 }
 
 
-//wyświetla sąsiadów
+//wyświetla sąsiadów w konsoli
 static void esp_show_neighbor_table()
 {
 
