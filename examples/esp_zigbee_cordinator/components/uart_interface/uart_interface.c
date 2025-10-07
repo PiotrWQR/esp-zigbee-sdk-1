@@ -43,7 +43,6 @@ void uart_interface_init(void)
     ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE * 2, TX_BUF_SIZE * 2, 10, &uart_queue, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
     uart_set_pin(uart_num, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
     ESP_LOGI("uart_interface", "UART initialized");
 }
 
@@ -61,11 +60,10 @@ void tx_task(void *arg)
     static const char *TX_TASK_TAG = "TX_TASK";
     // esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
     uart_tx_queue = xQueueCreate(10, sizeof(char*));
-
+    xQueueSend(uart_tx_queue, (void * )&"UART TX Task started", portMAX_DELAY);
     char* data;
     while (1) {
         if(xQueueReceive(uart_tx_queue, (void * )&data, 1000 / portTICK_PERIOD_MS)) {
-            sprintf(data, "\n");
             ESP_LOGI(TX_TASK_TAG, "Data to send: %s", data);
             sendData(TX_TASK_TAG, data);
             free(data);
@@ -92,7 +90,7 @@ void rx_task(void *arg)
             }
 
             ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
-            ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
+            //ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
         }
     }
     free(data);
@@ -208,17 +206,23 @@ void realize_host_request(cJSON *json){
         {
             esp_zb_platform_mac_config_t mac_config = {0};
             esp_zb_platform_mac_config_get(&mac_config);
+            int8_t changed = 0;
             if(cJSON_GetObjectItem(json, "csma_min_be") != NULL){
                 mac_config.csma_min_be = cJSON_GetObjectItem(json, "csma_min_be")->valueint;
+                changed = 1;
             }
             if(cJSON_GetObjectItem(json, "csma_max_be") != NULL){
                 mac_config.csma_max_be = cJSON_GetObjectItem(json, "csma_max_be")->valueint;
+                changed = 1;
             }
             if(cJSON_GetObjectItem(json, "csma_max_backoffs") != NULL){
                 mac_config.csma_max_backoffs = cJSON_GetObjectItem(json, "csma_max_backoffs")->valueint;
+                changed = 1;
             }
             ESP_ERROR_CHECK(esp_zb_platform_mac_config_set(&mac_config));
-            send_settings(0xffff); //Send settings to all devices
+            if(changed) {
+                send_settings(0xffff); //Send settings to all devices
+            }
         }
         break;
     case request_type_topology:
