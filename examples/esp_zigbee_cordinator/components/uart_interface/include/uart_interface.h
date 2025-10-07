@@ -1,6 +1,6 @@
 #define CONFIG_EXAMPLE_UART_BAUD_RATE 115200
-#define CONFIG_EXAMPLE_UART_TXD 17
-#define CONFIG_EXAMPLE_UART_RXD 16
+#define TXD_PIN (GPIO_NUM_6)
+#define RXD_PIN (GPIO_NUM_7)
 
 void uart_interface_init(void);
 void rx_task(void *arg);

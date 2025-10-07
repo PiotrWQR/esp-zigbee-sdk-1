@@ -22,14 +22,10 @@ void realize_host_request(cJSON *json);
 static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1024*2;
-QueueHandle_t uart_queue;
-QueueHandle_t uart_tx_queue;
+static QueueHandle_t uart_queue;
+static QueueHandle_t uart_tx_queue;
 
 
-
-
-#define TXD_PIN (CONFIG_EXAMPLE_UART_TXD)
-#define RXD_PIN (CONFIG_EXAMPLE_UART_RXD)
 
 void uart_interface_init(void)
 {
@@ -44,11 +40,9 @@ void uart_interface_init(void)
     };
 
     ESP_LOGI("uart_interface", "UART init with TXD pin: %d, RXD pin: %d, baud rate: %d", TXD_PIN, RXD_PIN, uart_config.baud_rate);
-    vTaskDelay(pdMS_TO_TICKS(1000)); // Wait for a second to let the UART settle
     ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE * 2, TX_BUF_SIZE * 2, 10, &uart_queue, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
     uart_set_pin(uart_num, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    uart_tx_queue = xQueueCreate(10, sizeof(char*));
 
     ESP_LOGI("uart_interface", "UART initialized");
 }
@@ -66,10 +60,12 @@ void tx_task(void *arg)
     //uart_event_t event;
     static const char *TX_TASK_TAG = "TX_TASK";
     // esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
+    uart_tx_queue = xQueueCreate(10, sizeof(char*));
+
     char* data;
     while (1) {
-        if(xQueueReceive(uart_tx_queue, (void * )&data, (TickType_t)portMAX_DELAY)) {
-            sprintf(data, "\r\n");
+        if(xQueueReceive(uart_tx_queue, (void * )&data, 1000 / portTICK_PERIOD_MS)) {
+            sprintf(data, "\n");
             ESP_LOGI(TX_TASK_TAG, "Data to send: %s", data);
             sendData(TX_TASK_TAG, data);
             free(data);
@@ -80,15 +76,20 @@ void tx_task(void *arg)
 void rx_task(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK";
-    // esp_log_level_set(RX_TASK_TAG, ESP_LOG_INFO);
+
     uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE + 1);
     while (1) {
-        const int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 1000 / portTICK_PERIOD_MS);
+        int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 1000 / portTICK_PERIOD_MS);
         if (rxBytes > 0) {
             data[rxBytes] = 0;
             cJSON *json = cJSON_Parse((char *)data);
             cJSON_GetNumberValue(cJSON_GetObjectItem(json, "information_type"));
-
+            if(json != NULL){
+                realize_host_request(json);
+                cJSON_Delete(json);
+            } else {
+                ESP_LOGI(RX_TASK_TAG, "Received invalid JSON");
+            }
 
             ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
             ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
