@@ -58,14 +58,15 @@ void tx_task(void *arg)
 {
     //uart_event_t event;
     static const char *TX_TASK_TAG = "TX_TASK";
-    // esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
+    esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
     uart_tx_queue = xQueueCreate(10, sizeof(char*));
     xQueueSend(uart_tx_queue, (void * )&"UART TX Task started", portMAX_DELAY);
-    char* data;
+    char *data = (char*) malloc(TX_BUF_SIZE+1);
     while (1) {
-        if(xQueueReceive(uart_tx_queue, (void * )&data, 1000 / portTICK_PERIOD_MS)) {
+        if(xQueueReceive(uart_tx_queue, (void * )data, 1000 / portTICK_PERIOD_MS)) {
             ESP_LOGI(TX_TASK_TAG, "Data to send: %s", data);
             sendData(TX_TASK_TAG, data);
+            vTaskDelay(1000);
             free(data);
         }
     }
