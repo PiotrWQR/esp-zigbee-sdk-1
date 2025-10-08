@@ -23,7 +23,7 @@ static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1024*2;
 static QueueHandle_t uart_queue;
-static QueueHandle_t uart_tx_queue;
+//static QueueHandle_t uart_tx_queue;
 
 
 
@@ -49,28 +49,19 @@ void uart_interface_init(void)
 int sendData(const char* logName, const char* data)
 {
     const int len = strlen(data);
-    const int txBytes = uart_write_bytes(uart_num, data, len);
+    char *data_with_newline = (char *)malloc(len + 2); // +1 for newline, +1 for null terminator
+    if (data_with_newline == NULL) {
+        ESP_LOGE(logName, "Failed to allocate memory for data_with_newline");
+        return -1; // Indicate error
+    }
+    strcpy(data_with_newline, data);
+    sprintf(data_with_newline + len, "\n"); // Append newline character
+    int txBytes = uart_write_bytes(uart_num, data_with_newline, len + 1);
     ESP_LOGI(logName, "Wrote %d bytes", txBytes);
     return txBytes;
 }
 
-void tx_task(void *arg)
-{
-    //uart_event_t event;
-    static const char *TX_TASK_TAG = "TX_TASK";
-    esp_log_level_set(TX_TASK_TAG, ESP_LOG_INFO);
-    uart_tx_queue = xQueueCreate(10, sizeof(char*));
-    xQueueSend(uart_tx_queue, (void * )&"UART TX Task started", portMAX_DELAY);
-    char *data = (char*) malloc(TX_BUF_SIZE+1);
-    while (1) {
-        if(xQueueReceive(uart_tx_queue, (void * )data, 1000 / portTICK_PERIOD_MS)) {
-            ESP_LOGI(TX_TASK_TAG, "Data to send: %s", data);
-            sendData(TX_TASK_TAG, data);
-            vTaskDelay(1000);
-            free(data);
-        }
-    }
-}
+
 
 void rx_task(void *arg)
 {
@@ -189,19 +180,22 @@ char* create_json_sending_settings()
 void realize_host_request(cJSON *json){
     //TODO mutex for settings change
     uint8_t request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
+    const char TAG[] = "request_handler";
     switch (request_type)
     {
     case request_type_set_sending_settings:
-        if(cJSON_GetObjectItem(json, "repeats") != NULL){
-            repeats = cJSON_GetObjectItem(json, "repeats")->valueint;
-        }
-        if(cJSON_GetObjectItem(json, "dest_addr") != NULL){
-            dest_addr = cJSON_GetObjectItem(json, "dest_addr")->valueint;
-        }
-        if(cJSON_GetObjectItem(json, "delay_ms") != NULL){
-            delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
-        }
-        send_settings(0xffff); //Send settings to all devices
+        {
+            if(cJSON_GetObjectItem(json, "repeats") != NULL){
+                repeats = cJSON_GetObjectItem(json, "repeats")->valueint;
+            }
+            if(cJSON_GetObjectItem(json, "dest_addr") != NULL){
+                dest_addr = cJSON_GetObjectItem(json, "dest_addr")->valueint;
+            }
+            if(cJSON_GetObjectItem(json, "delay_ms") != NULL){
+                delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
+            }
+            send_settings(0xffff);
+        } //Send settings to all devices
         break;
     case request_type_set_cca:
         {
@@ -230,10 +224,7 @@ void realize_host_request(cJSON *json){
         {
             char* json_string = create_json_topology();
             if(json_string != NULL){
-                char* json_copy = strdup(json_string);//Czy kopiowanie jest konieczne?
-                if(xQueueSend(uart_tx_queue, &json_copy, (TickType_t)0) != pdTRUE) {
-                    free(json_copy);
-                }
+                sendData(TAG, json_string);
                 free(json_string);
             }
         }
@@ -242,10 +233,7 @@ void realize_host_request(cJSON *json){
         {
             char* json_string = create_json_cca();
             if(json_string != NULL){
-                char* json_copy = strdup(json_string);//Czy kopiowanie jest konieczne?
-                if(xQueueSend(uart_tx_queue, &json_copy, (TickType_t)0) != pdTRUE) {
-                    free(json_copy);
-                }
+                sendData(TAG, json_string);
                 free(json_string);
             }
         }
@@ -254,16 +242,13 @@ void realize_host_request(cJSON *json){
         {
             char* json_string = create_json_sending_settings();
             if(json_string != NULL){
-                char* json_copy = strdup(json_string);//Czy kopiowanie jest konieczne?
-                if(xQueueSend(uart_tx_queue, &json_copy, (TickType_t)0) != pdTRUE) {
-                    free(json_copy);
-                }
+                sendData(TAG, json_string);
                 free(json_string);
             }
         }
         break;
     default:
-        ESP_LOGI("uart_interface", "Unknown request type: %d", request_type);
+        ESP_LOGI(TAG, "Unknown request type: %d", request_type);
         break;
     }
 

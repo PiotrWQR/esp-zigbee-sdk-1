@@ -4,7 +4,7 @@
 
 void uart_interface_init(void);
 void rx_task(void *arg);
-void tx_task(void *arg);
+
 
 
 enum json_information_type_e {
