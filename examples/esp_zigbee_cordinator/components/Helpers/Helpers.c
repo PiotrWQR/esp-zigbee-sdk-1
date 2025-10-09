@@ -394,3 +394,7 @@ void send_indicator_toall(void)
         vTaskDelay(pdMS_TO_TICKS(100)); // Delay to avoid flooding the network
     }
 }
+
+cJSON * get_topology_json(void) {
+    return topology_json;
+}

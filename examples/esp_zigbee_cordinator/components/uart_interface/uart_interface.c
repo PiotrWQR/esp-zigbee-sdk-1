@@ -13,7 +13,7 @@
 // static const char *TAG = "uart_interface";
 
 //Function prototypes
-char* create_json_topology();
+char* create_json_tables();
 char* create_json_cca();
 char* create_json_sending_settings();
 void realize_host_request(cJSON *json);
@@ -23,6 +23,7 @@ static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1024*2;
 static QueueHandle_t uart_queue;
+static cJSON *topology_json = NULL;
 //static QueueHandle_t uart_tx_queue;
 
 
@@ -44,6 +45,13 @@ void uart_interface_init(void)
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
     uart_set_pin(uart_num, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     ESP_LOGI("uart_interface", "UART initialized");
+}
+
+void update_topology_json(cJSON *topology_report, const char* ieee_str){
+    if(topology_json == NULL){
+        topology_json = cJSON_CreateObject();
+    }
+    cJSON_AddItemToObject(topology_json, ieee_str, topology_report);
 }
 
 int sendData(const char* logName, const char* data)
@@ -73,29 +81,34 @@ void rx_task(void *arg)
         if (rxBytes > 0) {
             data[rxBytes] = 0;
             cJSON *json = cJSON_Parse((char *)data);
-            cJSON_GetNumberValue(cJSON_GetObjectItem(json, "information_type"));
+            double request_type = cJSON_GetNumberValue(cJSON_GetObjectItem(json, "request_type"));
             if(json != NULL){
                 realize_host_request(json);
                 cJSON_Delete(json);
             } else {
                 ESP_LOGI(RX_TASK_TAG, "Received invalid JSON");
+                char* json_string = create_json_error("Json is not valid");
+                if(json_string != NULL){
+                    sendData(RX_TASK_TAG, json_string);
+                    free(json_string);
+                    continue;
+                }
             }
 
-            ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
-            //ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
+            ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s', information_type: %f", rxBytes, data, request_type);
         }
     }
     free(data);
 }
 
-char* create_json_topology()
+char* create_json_tables()
 {
     cJSON *root = cJSON_CreateObject();
     if (root == NULL) {
         return NULL;
     }
 
-    cJSON_AddNumberToObject(root, "information_type", json_info_topology);
+    cJSON_AddNumberToObject(root, "information_type", json_info_tables);
     cJSON_AddArrayToObject(root, "neighbors");  
     cJSON_AddArrayToObject(root, "routes");
 
@@ -156,6 +169,23 @@ char* create_json_cca()
     return json_string;
 }
 
+char* create_json_error(char *error_description)
+{
+    cJSON *root = cJSON_CreateObject();
+    if (root == NULL) {
+        return NULL;
+    }
+
+    if(error_description == NULL)
+        error_description = "Unknown error";
+    cJSON_AddStringToObject(root, "error_description", error_description);
+
+    cJSON_AddNumberToObject(root, "information_type", json_info_error);
+    char *json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    return json_string;
+}
+
 char* create_json_sending_settings()
 {
     cJSON *root = cJSON_CreateObject();
@@ -177,12 +207,22 @@ char* create_json_sending_settings()
     return json_string;
 }
 
+
+char* create_json_topology(){
+    cJSON *root =  get_topology_json();
+    cJSON_AddNumberToObject(root, "information_type", json_info_topology);
+    if (root == NULL) {
+        return NULL;
+    }
+    char *json_string = cJSON_PrintUnformatted(topology_json);
+    return json_string;
+}
+
 void realize_host_request(cJSON *json){
     //TODO mutex for settings change
     uint8_t request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
     const char TAG[] = "request_handler";
-    switch (request_type)
-    {
+    switch (request_type){
     case request_type_set_sending_settings:
         {
             if(cJSON_GetObjectItem(json, "repeats") != NULL){
@@ -214,15 +254,21 @@ void realize_host_request(cJSON *json){
                 mac_config.csma_max_backoffs = cJSON_GetObjectItem(json, "csma_max_backoffs")->valueint;
                 changed = 1;
             }
-            ESP_ERROR_CHECK(esp_zb_platform_mac_config_set(&mac_config));
-            if(changed) {
+            if(esp_zb_platform_mac_config_set(&mac_config) == ESP_OK && changed) {
                 send_settings(0xffff); //Send settings to all devices
             }
-        }
+            else{
+                ESP_LOGI(TAG, "Failed to set MAC config");
+                char* json_string = create_json_error("Failed to set MAC config, one or more parameters are invalid");
+                if(json_string != NULL){
+                    sendData(TAG, json_string);
+                    free(json_string);  
+                }
+        }}
         break;
-    case request_type_topology:
+    case request_type_tables:
         {
-            char* json_string = create_json_topology();
+            char* json_string = create_json_tables();
             if(json_string != NULL){
                 sendData(TAG, json_string);
                 free(json_string);
@@ -247,8 +293,28 @@ void realize_host_request(cJSON *json){
             }
         }
         break;
+    case request_type_topology:
+        {
+            char* json_string = create_json_topology();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            } else {
+                ESP_LOGI(TAG, "Topology is empty");
+                char* json_string = create_json_error("Topology is empty");
+                if(json_string != NULL){
+                    sendData(TAG, json_string);
+                    free(json_string);
+                }
+            }
+        }
     default:
         ESP_LOGI(TAG, "Unknown request type: %d", request_type);
+        char* json_string = create_json_error("Not recognized request type");
+        if(json_string != NULL){
+            sendData(TAG, json_string);
+            free(json_string);
+        }
         break;
     }
 

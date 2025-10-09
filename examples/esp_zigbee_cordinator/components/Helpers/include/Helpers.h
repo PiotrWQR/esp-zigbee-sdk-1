@@ -4,7 +4,7 @@
 #include "esp_zigbee_core.h"
 #include "esp_zigbee_type.h"
 #include <freertos/queue.h>
-
+#include "cJSON.h"
 #define MIN_BACKOFF_EXPONENT           4                                    /* Minimum value of backoff exponent */
 #define MAX_BACKOFF_EXPONENT           8                                    /* Maximum value of backoff exponent */
 #define MAX_BACKOFF_RETRIES            5                                   /* Maximum number of backoff retries */
@@ -22,6 +22,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
 bool deferred_driver_init();
 void esp_zigbee_include_show_tables(void);
 
+cJSON * get_topology_json(void);
 void send_traffic_report(void);
 void refresh_routes(void);
 void traffic_reporter_init(void *pvParameters);
