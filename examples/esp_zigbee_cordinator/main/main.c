@@ -15,8 +15,8 @@
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
 #endif
 
+static const char *TAG= "ESP_ZB_COORDINATOR_MAIN";
 
-static const char *TAG= "ESP_ZB_COORDINATOR";
 
 
 static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
@@ -108,10 +108,9 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
     case ESP_ZB_NLME_STATUS_INDICATION:
         nwk_status_params = (esp_zb_zdo_signal_nwk_status_indication_params_t *)esp_zb_app_signal_get_params(p_sg_p);
         ESP_LOGI(TAG, "Network status with status: %s, network addr: 0x%04hx, status: %d", esp_err_to_name(err_status), nwk_status_params->network_addr, nwk_status_params->status);
-
         if (nwk_status_params->status == ESP_ZB_NWK_COMMAND_STATUS_ADDRESS_CONFLICT) {
             ESP_LOGE(TAG, "PAN ID conflict detected, restarting network formation");
-                esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_FORMATION, 1000);
+            esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_FORMATION, 1000);
         }     
         break;
     case ESP_ZB_ZDO_SIGNAL_DEVICE_AUTHORIZED:
@@ -219,11 +218,9 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     helpers_init();
     ESP_LOGI(TAG, "Starting Zigbee Coordinator example");
-    xTaskCreate(esp_zb_task, "Zigbee_main", 6*1024, NULL, configMAX_PRIORITIES-3, NULL);
+    xTaskCreate(esp_zb_task, "Zigbee_main", 9*1024, NULL, configMAX_PRIORITIES-3, NULL);
     ESP_LOGI(TAG, "Starting UART interface");
     uart_interface_init();
     ESP_LOGI(TAG, "Starting UART RX task");
-    xTaskCreate(rx_task, "uart_rx_task", 2*1024, NULL, configMAX_PRIORITIES-2, NULL);
-
-    //xTaskCreate(esp_helper_task, "zigbee_traffic_reporter", 4096, NULL, 5, NULL);
+    xTaskCreate(rx_task, "uart_rx_task", 4*1024, NULL, configMAX_PRIORITIES-2, NULL);
 }

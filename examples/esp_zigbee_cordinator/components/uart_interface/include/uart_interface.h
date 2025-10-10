@@ -14,6 +14,8 @@ enum json_information_type_e {
     json_info_cca = 2,
     json_info_sending_settings = 3,
     json_info_tables = 4,
+    json_info_nwk_data = 5,
+    json_info_trasmision_ended = 6,
     json_info_error = 255,
 };
 
@@ -25,4 +27,6 @@ enum request_type_e {
     request_type_set_cca = 4,
     request_type_set_sending_settings = 5,
     request_type_tables = 6,
+    request_type_nwk_data = 7,
+    request_type_trasmision_ended = 8,
 };

@@ -12,6 +12,7 @@
 static uint16_t repeats = 40;
 static uint16_t dest_addr = 0x0000;
 static uint32_t delay_ms = 1000;
+static uint16_t payload_size = 1600;
 
 void helpers_init(void);
 
@@ -28,6 +29,11 @@ void refresh_routes(void);
 void traffic_reporter_init(void *pvParameters);
 void zero_traffic_raport(void);
 void send_settings(uint16_t short_addr);
+char *ieee_addr_to_string(esp_zb_ieee_addr_t ieee_addr);
+char *ieee_addr_uint64_to_string(uint64_t ieee_addr);
+char *short_addr_to_string(uint16_t short_addr);
+cJSON * get_transmision_ended_json(void);
+
 //tablice pomocnicze
 //tablica dopasowania typu urządzenia do nazwy enumeratora
 static const char *dev_type_name[] = {
@@ -95,6 +101,7 @@ typedef struct {
     uint8_t csma_min_be;        /*!< The minimum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
     uint8_t csma_max_be;        /*!< The maximum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
     uint8_t csma_max_backoffs;  /*!< The maximum number of backoff attempts, NB, in the CSMA-CA algorithm. */
+    uint16_t payload;
 } setting_change_t;
 
 

@@ -16,7 +16,7 @@
 char* create_json_tables();
 char* create_json_cca();
 char* create_json_sending_settings();
-void realize_host_request(cJSON *json);
+void execute_host_request(cJSON *json);
 
 // Setup UART buffered IO with event queue
 static const int  uart_num = UART_NUM_1;
@@ -77,16 +77,16 @@ void rx_task(void *arg)
 
     uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE + 1);
     while (1) {
-        int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 1000 / portTICK_PERIOD_MS);
+        int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 100 / portTICK_PERIOD_MS);
         if (rxBytes > 0) {
             data[rxBytes] = 0;
             cJSON *json = cJSON_Parse((char *)data);
-            double request_type = cJSON_GetNumberValue(cJSON_GetObjectItem(json, "request_type"));
+            int request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
             if(json != NULL){
-                realize_host_request(json);
+                execute_host_request(json);
                 cJSON_Delete(json);
             } else {
-                ESP_LOGI(RX_TASK_TAG, "Received invalid JSON");
+                ESP_LOGW(RX_TASK_TAG, "Received invalid JSON");
                 char* json_string = create_json_error("Json is not valid");
                 if(json_string != NULL){
                     sendData(RX_TASK_TAG, json_string);
@@ -95,7 +95,8 @@ void rx_task(void *arg)
                 }
             }
 
-            ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s', information_type: %f", rxBytes, data, request_type);
+            ESP_LOGI(RX_TASK_TAG, "Read %d bytes: %s", rxBytes, data);
+            ESP_LOGI(RX_TASK_TAG, "information_type: %d", request_type);
         }
     }
     free(data);
@@ -132,19 +133,16 @@ char* create_json_tables()
         cJSON_AddNumberToObject(neighbor_item, "rssi", neighbor.rssi);
         cJSON_AddItemToArray(neighbors, neighbor_item);
     }
+
     itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_info_t route = {};
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
         cJSON *route_item = cJSON_CreateObject();
-        char dest_addr_str[8];
-        sprintf(dest_addr_str, "0x%04hx", route.dest_addr);
-        cJSON_AddStringToObject(route_item, "dest_addr", dest_addr_str);
+        cJSON_AddStringToObject(route_item, "dest_addr", short_addr_to_string(route.dest_addr));
         cJSON_AddNumberToObject(route_item, "next_hop", route.next_hop_addr);
         cJSON_AddNumberToObject(route_item, "flags", *(uint8_t *)&route.flags);
         cJSON_AddItemToArray(routes, route_item);
     }
-    
-
 
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
@@ -157,7 +155,6 @@ char* create_json_cca()
     if (root == NULL) {
         return NULL;
     }
-
     cJSON_AddNumberToObject(root, "information_type", json_info_cca);
     esp_zb_platform_mac_config_t mac_config = {0};
     esp_zb_platform_mac_config_get(&mac_config);
@@ -183,6 +180,7 @@ char* create_json_error(char *error_description)
     cJSON_AddNumberToObject(root, "information_type", json_info_error);
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
+    printf("Error JSON: %s\n", json_string);
     return json_string;
 }
 
@@ -200,6 +198,7 @@ char* create_json_sending_settings()
     cJSON_AddStringToObject(root, "dest_addr_str", dest_addr_str);
     cJSON_AddNumberToObject(root, "dest_addr", dest_addr);
     cJSON_AddNumberToObject(root, "delay_ms", delay_ms);
+    cJSON_AddNumberToObject(root, "payload_size", payload_size);
 
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
@@ -214,11 +213,30 @@ char* create_json_topology(){
     if (root == NULL) {
         return NULL;
     }
-    char *json_string = cJSON_PrintUnformatted(topology_json);
+    char *json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
     return json_string;
 }
 
-void realize_host_request(cJSON *json){
+char* create_json_transmision_ended(){
+    cJSON *root =  get_transmision_ended_json();
+    cJSON_AddNumberToObject(root, "information_type", json_info_trasmision_ended);
+
+    if (root == NULL) {
+        return NULL;
+    }
+    if(!cJSON_HasObjectItem(root, "short_addr")) {
+        char* json_string = create_json_error("No transmission data available");
+        return json_string;
+    }
+    char *json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+
+    return json_string;
+}
+
+void execute_host_request(cJSON *json){
     //TODO mutex for settings change
     uint8_t request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
     const char TAG[] = "request_handler";
@@ -233,6 +251,9 @@ void realize_host_request(cJSON *json){
             }
             if(cJSON_GetObjectItem(json, "delay_ms") != NULL){
                 delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
+            }
+            if(cJSON_GetObjectItem(json, "payload_size") != NULL){
+                payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
             }
             send_settings(0xffff);
         } //Send settings to all devices
@@ -308,13 +329,52 @@ void realize_host_request(cJSON *json){
                 }
             }
         }
+        break;
+    case request_type_nwk_data:
+        {
+            cJSON *root = cJSON_CreateObject();
+            if (root == NULL) {
+                char* json_string = create_json_error("Failed to create JSON object");
+                if(json_string != NULL){
+                    sendData(TAG, json_string);
+                    free(json_string);
+                }
+                break;
+            }
+            esp_zb_ieee_addr_t extended_pan_id;
+            esp_zb_get_extended_pan_id(extended_pan_id);
+            cJSON_AddNumberToObject(root, "information_type", json_info_nwk_data);
+            cJSON_AddStringToObject(root, "extended_pan_id", ieee_addr_to_string(extended_pan_id));
+            cJSON_AddStringToObject(root, "pan_id", short_addr_to_string(esp_zb_get_pan_id()));
+            cJSON_AddNumberToObject(root, "channel", esp_zb_get_current_channel());
+
+            char *json_string = cJSON_PrintUnformatted(root);
+            cJSON_Delete(root);
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+        }
+        break;
+    case request_type_trasmision_ended:
+        {
+            char* json_string = create_json_transmision_ended();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            } 
+        }
+        break;
     default:
         ESP_LOGI(TAG, "Unknown request type: %d", request_type);
-        char* json_string = create_json_error("Not recognized request type");
+        char fstring[50];
+        sprintf(fstring, "Not recognized request type: %d", request_type);
+        char* json_string = create_json_error(fstring);
         if(json_string != NULL){
             sendData(TAG, json_string);
             free(json_string);
         }
+        free(fstring);
         break;
     }
 
