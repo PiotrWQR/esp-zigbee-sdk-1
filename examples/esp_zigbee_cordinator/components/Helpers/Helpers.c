@@ -295,7 +295,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
                 route_info_t *route = &topology->routes[i];
                 cJSON *route_json = cJSON_CreateObject();
                 cJSON_AddStringToObject(route_json, "dest_addr", short_addr_to_string(route->dest_addr));
-                    cJSON_AddStringToObject(route_json, "next_hop", short_addr_to_string(route->next_hop));
+                cJSON_AddStringToObject(route_json, "next_hop", short_addr_to_string(route->next_hop));
                 cJSON_AddItemToArray(routes, route_json);
                 ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Route %d: dest addr 0x%04hx, next hop 0x%04hx", i, route->dest_addr, route->next_hop);
             }

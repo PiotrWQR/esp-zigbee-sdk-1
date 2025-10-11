@@ -78,12 +78,24 @@ void rx_task(void *arg)
     uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE + 1);
     while (1) {
         int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 100 / portTICK_PERIOD_MS);
+        int request_type ;
         if (rxBytes > 0) {
             data[rxBytes] = 0;
             cJSON *json = cJSON_Parse((char *)data);
-            int request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
             if(json != NULL){
+                if(cJSON_GetObjectItem(json, "request_type") == NULL){
+                    ESP_LOGW(RX_TASK_TAG, "No request_type in JSON");
+                    char* json_string = create_json_error("No request_type in JSON");
+                    if(json_string != NULL){
+                        sendData(RX_TASK_TAG, json_string);
+                        free(json_string);
+                        cJSON_Delete(json);
+                        continue;
+                    }
+                }
+                request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
                 execute_host_request(json);
+
                 cJSON_Delete(json);
             } else {
                 ESP_LOGW(RX_TASK_TAG, "Received invalid JSON");
