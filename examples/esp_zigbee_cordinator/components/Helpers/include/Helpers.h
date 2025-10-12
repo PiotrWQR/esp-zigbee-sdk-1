@@ -83,6 +83,8 @@ typedef struct data_recived_s {
     uint32_t end_time;
     uint32_t failed_ping_count;
     uint32_t successful_ping_count;
+    esp_zb_ieee_addr_t addr;
+    
 } data_recived_t;
 
 //ładunek pakietu ping

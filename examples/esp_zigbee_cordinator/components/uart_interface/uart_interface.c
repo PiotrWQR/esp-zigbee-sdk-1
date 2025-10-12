@@ -23,9 +23,7 @@ static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1024*2;
 static QueueHandle_t uart_queue;
-static cJSON *topology_json = NULL;
 //static QueueHandle_t uart_tx_queue;
-
 
 
 void uart_interface_init(void)
@@ -47,12 +45,6 @@ void uart_interface_init(void)
     ESP_LOGI("uart_interface", "UART initialized");
 }
 
-void update_topology_json(cJSON *topology_report, const char* ieee_str){
-    if(topology_json == NULL){
-        topology_json = cJSON_CreateObject();
-    }
-    cJSON_AddItemToObject(topology_json, ieee_str, topology_report);
-}
 
 int sendData(const char* logName, const char* data)
 {
@@ -68,7 +60,6 @@ int sendData(const char* logName, const char* data)
     ESP_LOGI(logName, "Wrote %d bytes", txBytes);
     return txBytes;
 }
-
 
 
 void rx_task(void *arg)
@@ -233,15 +224,12 @@ char* create_json_topology(){
 
 char* create_json_transmision_ended(){
     cJSON *root =  get_transmision_ended_json();
-    cJSON_AddNumberToObject(root, "information_type", json_info_trasmision_ended);
+    cJSON_AddNumberToObject(root, "information_type", json_info_transmision_ended);
 
     if (root == NULL) {
         return NULL;
     }
-    if(!cJSON_HasObjectItem(root, "short_addr")) {
-        char* json_string = create_json_error("No transmission data available");
-        return json_string;
-    }
+    printf("Transmision ended JSON: %s\n", cJSON_PrintUnformatted(root));
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
 
@@ -368,7 +356,7 @@ void execute_host_request(cJSON *json){
             }
         }
         break;
-    case request_type_trasmision_ended:
+    case request_type_transmission_ended:
         {
             char* json_string = create_json_transmision_ended();
             if(json_string != NULL){
@@ -378,15 +366,17 @@ void execute_host_request(cJSON *json){
         }
         break;
     default:
-        ESP_LOGI(TAG, "Unknown request type: %d", request_type);
-        char fstring[50];
-        sprintf(fstring, "Not recognized request type: %d", request_type);
-        char* json_string = create_json_error(fstring);
-        if(json_string != NULL){
+        {
+            ESP_LOGI(TAG, "Unknown request type: %d", request_type);
+            char fstring[50];
+            sprintf(fstring, "Not recognized request type: %d", request_type);
+            char* json_string = create_json_error(fstring);
+            if(json_string != NULL){
             sendData(TAG, json_string);
             free(json_string);
         }
-        free(fstring);
+            free(fstring);
+        }
         break;
     }
 

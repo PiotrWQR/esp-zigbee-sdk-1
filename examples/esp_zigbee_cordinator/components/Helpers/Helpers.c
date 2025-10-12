@@ -253,12 +253,14 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             data_recived_t *data = (data_recived_t *)ind.asdu;
             ESP_LOGW("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, data->start_time, data->end_time, data->end_time - data->start_time);
             
-            cJSON_AddStringToObject(transmision_ended_json, "short_addr", short_addr_to_string(ind.src_short_addr));
-            cJSON_AddNumberToObject(transmision_ended_json, "start_time", data->start_time);
-            cJSON_AddNumberToObject(transmision_ended_json, "end_time", data->end_time);
-            cJSON_AddNumberToObject(transmision_ended_json, "duration_ms", data->end_time - data->start_time);
-            cJSON_AddNumberToObject(transmision_ended_json, "successful_pings", data->successful_ping_count);
-            cJSON_AddNumberToObject(transmision_ended_json, "failed_pings", data->failed_ping_count);
+            cJSON * item = cJSON_CreateObject();
+            cJSON_AddNumberToObject(item, "start_time", data->start_time);
+            cJSON_AddNumberToObject(item, "end_time", data->end_time);
+            cJSON_AddNumberToObject(item, "duration_ms", data->end_time - data->start_time);
+            cJSON_AddNumberToObject(item, "successful_pings", data->successful_ping_count);
+            cJSON_AddNumberToObject(item, "failed_pings", data->failed_ping_count);
+            cJSON_AddStringToObject(item, "address", short_addr_to_string(ind.dst_short_addr));
+            cJSON_AddItemToObject(transmision_ended_json, ieee_addr_to_string(data->addr), item);
         }
         if(ind.dst_endpoint==10){
             ping_count++;
