@@ -33,6 +33,8 @@ void send_indicator_toall(void);
 void helpers_init(void) {
     topology_json = cJSON_CreateObject();
     transmision_ended_json = cJSON_CreateObject();
+    cJSON * arr = cJSON_CreateArray();
+    cJSON_AddItemToObject(transmision_ended_json, "arr", arr);
 }
 
 char* ieee_addr_to_string(esp_zb_ieee_addr_t ieee_addr) {
@@ -252,15 +254,17 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             
             data_recived_t *data = (data_recived_t *)ind.asdu;
             ESP_LOGW("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, data->start_time, data->end_time, data->end_time - data->start_time);
-            
             cJSON * item = cJSON_CreateObject();
+            cJSON_AddStringToObject(item, "short_addr", short_addr_to_string(ind.src_short_addr));
+            cJSON_AddStringToObject(item, "ieee_addr", ieee_addr_to_string(data->addr));
             cJSON_AddNumberToObject(item, "start_time", data->start_time);
             cJSON_AddNumberToObject(item, "end_time", data->end_time);
             cJSON_AddNumberToObject(item, "duration_ms", data->end_time - data->start_time);
             cJSON_AddNumberToObject(item, "successful_pings", data->successful_ping_count);
             cJSON_AddNumberToObject(item, "failed_pings", data->failed_ping_count);
-            cJSON_AddStringToObject(item, "address", short_addr_to_string(ind.dst_short_addr));
-            cJSON_AddItemToObject(transmision_ended_json, ieee_addr_to_string(data->addr), item);
+            cJSON_AddNumberToObject(item, "recon_time", data->recon_time);
+            cJSON * arr = cJSON_GetObjectItem(transmision_ended_json,"arr");
+            cJSON_AddItemToArray(arr, item);
         }
         if(ind.dst_endpoint==10){
             ping_count++;
@@ -429,6 +433,8 @@ void send_indicator_toall(void)
 }
 
 cJSON * get_topology_json(void) {
+    send_indicator_toall();
+    vTaskDelay(pdMS_TO_TICKS(3000)); // Wait for responses to be received
     cJSON *result = cJSON_Duplicate(topology_json, 1);
     // printf("Topology JSON: %s\n", cJSON_PrintUnformatted(result));
     return result;
