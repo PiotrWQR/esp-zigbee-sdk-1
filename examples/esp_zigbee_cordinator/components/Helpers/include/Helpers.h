@@ -9,10 +9,7 @@
 #define MAX_BACKOFF_EXPONENT           8                                    /* Maximum value of backoff exponent */
 #define MAX_BACKOFF_RETRIES            5                                   /* Maximum number of backoff retries */
 
-static uint16_t repeats = 40;
-static uint16_t dest_addr = 0x0000;
-static uint32_t delay_ms = 1000;
-static uint16_t payload_size = 1600;
+
 
 void helpers_init(void);
 
@@ -33,6 +30,14 @@ char *ieee_addr_to_string(esp_zb_ieee_addr_t ieee_addr);
 char *ieee_addr_uint64_to_string(uint64_t ieee_addr);
 char *short_addr_to_string(uint16_t short_addr);
 cJSON * get_transmision_ended_json(void);
+void change_delay(uint32_t new_delay_ms);
+void change_repeats(uint16_t new_repeats);
+void change_dest_addr(uint16_t new_dest_addr);
+void change_payload_size(uint16_t new_payload_size);
+uint16_t get_repeats(void);
+uint16_t get_dest_addr(void);
+uint32_t get_delay_ms(void);
+uint16_t get_payload_size(void);
 
 //tablice pomocnicze
 //tablica dopasowania typu urządzenia do nazwy enumeratora

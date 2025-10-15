@@ -204,13 +204,13 @@ char* create_json_sending_settings()
     }
 
     cJSON_AddNumberToObject(root, "information_type", json_info_sending_settings);
-    cJSON_AddNumberToObject(root, "repeats", repeats);
+    cJSON_AddNumberToObject(root, "repeats", get_repeats());
     char* dest_addr_str = (char*)malloc(8);
-    sprintf(dest_addr_str, "0x%04hx", dest_addr);
+    sprintf(dest_addr_str, "0x%04hx", get_dest_addr());
     cJSON_AddStringToObject(root, "dest_addr_str", dest_addr_str);
-    cJSON_AddNumberToObject(root, "dest_addr", dest_addr);
-    cJSON_AddNumberToObject(root, "delay_ms", delay_ms);
-    cJSON_AddNumberToObject(root, "payload_size", payload_size);
+    cJSON_AddNumberToObject(root, "dest_addr", get_dest_addr());
+    cJSON_AddNumberToObject(root, "delay_ms", get_delay_ms());
+    cJSON_AddNumberToObject(root, "payload_size", get_payload_size());
 
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
@@ -250,20 +250,29 @@ void execute_host_request(cJSON *json){
     //TODO mutex for settings change
     uint8_t request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
     const char TAG[] = "request_handler";
+    
     switch (request_type){
     case request_type_set_sending_settings:
         {
-            if(cJSON_GetObjectItem(json, "repeats") != NULL){
-                repeats = cJSON_GetObjectItem(json, "repeats")->valueint;
+            if(cJSON_HasObjectItem(json, "repeats") ){
+                change_repeats(cJSON_GetObjectItem(json, "repeats")->valueint);
             }
-            if(cJSON_GetObjectItem(json, "dest_addr") != NULL){
-                dest_addr = cJSON_GetObjectItem(json, "dest_addr")->valueint;
+            if(cJSON_HasObjectItem(json, "dest_addr")){
+                change_dest_addr(cJSON_GetObjectItem(json, "dest_addr")->valueint);
             }
-            if(cJSON_GetObjectItem(json, "delay_ms") != NULL){
-                delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
+            if(cJSON_HasObjectItem(json, "delay_ms") ){
+                uint16_t delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
+                change_delay(delay_ms);
+                ESP_LOGI(TAG, "Delay set to %ld ms", get_delay_ms());
             }
-            if(cJSON_GetObjectItem(json, "payload_size") != NULL){
-                payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
+            if(cJSON_HasObjectItem(json, "payload_size")){
+                uint16_t payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
+                if(payload_size > 1600){
+                    payload_size = 1600;
+                    ESP_LOGI(TAG, "Payload size too large, set to max 1600");  
+                }
+                change_payload_size(payload_size);
+                ESP_LOGI(TAG, "Payload size set to %d", get_payload_size());
             }
             send_settings(0xffff);
         } //Send settings to all devices
@@ -273,19 +282,19 @@ void execute_host_request(cJSON *json){
             esp_zb_platform_mac_config_t mac_config = {0};
             esp_zb_platform_mac_config_get(&mac_config);
             int8_t changed = 0;
-            if(cJSON_GetObjectItem(json, "csma_min_be") != NULL){
+            if(cJSON_HasObjectItem(json, "csma_min_be")){
                 mac_config.csma_min_be = cJSON_GetObjectItem(json, "csma_min_be")->valueint;
                 changed = 1;
             }
-            if(cJSON_GetObjectItem(json, "csma_max_be") != NULL){
+            if(cJSON_HasObjectItem(json, "csma_max_be") != NULL){
                 mac_config.csma_max_be = cJSON_GetObjectItem(json, "csma_max_be")->valueint;
                 changed = 1;
             }
-            if(cJSON_GetObjectItem(json, "csma_max_backoffs") != NULL){
+            if(cJSON_HasObjectItem(json, "csma_max_backoffs") != NULL){
                 mac_config.csma_max_backoffs = cJSON_GetObjectItem(json, "csma_max_backoffs")->valueint;
                 changed = 1;
             }
-            if(esp_zb_platform_mac_config_set(&mac_config) == ESP_OK && changed) {
+            if(changed) {
                 send_settings(0xffff); //Send settings to all devices
             }
             else{

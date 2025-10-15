@@ -23,6 +23,11 @@ static uint32_t ping_count = 0;
 static esp_zb_network_traffic_raport_t traffic_raport[10];
 static cJSON *topology_json = NULL;
 static cJSON *transmision_ended_json = NULL;
+static uint16_t repeats = 40;
+static uint16_t dest_addr = 0x0000;
+static uint32_t delay_ms = 1000;
+static uint16_t payload_size = 1600;
+
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
@@ -103,8 +108,9 @@ void send_settings(uint16_t short_addr){
         .use_alias = false,
         .alias_src_addr = 0,
         .alias_seq_num = 0,
-        .radius = 2
+        .radius = 4
     };
+    ESP_LOGI(TAG_include, "Sending settings to 0x%04hx: repeats=%d, dest_addr=0x%04hx, delay_ms=%ld, payload_size=%d", short_addr, settings.new_repeats, settings.new_dest_addr, settings.new_delay_ms, settings.payload);
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
@@ -444,4 +450,40 @@ cJSON * get_transmision_ended_json(void) {
     cJSON *result = cJSON_Duplicate(transmision_ended_json, 1);
     // printf("Transmision Ended JSON: %s\n", cJSON_PrintUnformatted(result));
     return result;
+}
+
+//funkcje zmieniające i pobierające ustawienia wysyłania pakietów
+
+
+void change_delay(uint32_t new_delay_ms) {
+    delay_ms = new_delay_ms;
+}
+void change_repeats(uint16_t new_repeats) {
+    repeats = new_repeats;
+}
+void change_dest_addr(uint16_t new_dest_addr) {
+    dest_addr = new_dest_addr;
+}
+void change_payload_size(uint16_t new_payload_size) {
+    if(new_payload_size > 1600){
+        payload_size = 1600;
+        ESP_LOGI(TAG_include, "Payload size too large, set to max 1600");
+    }
+    else{
+        payload_size = new_payload_size;
+    }
+}
+
+
+uint16_t get_repeats(void) {
+    return repeats;
+}
+uint16_t get_dest_addr(void) {
+    return dest_addr;
+}
+uint32_t get_delay_ms(void) {
+    return delay_ms;
+}
+uint16_t get_payload_size(void) {
+    return payload_size;
 }
