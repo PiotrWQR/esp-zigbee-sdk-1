@@ -131,7 +131,6 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
         failed_ping_count++;
         fails_in_row++;
         if(fails_in_row >= 10) {
-            ESP_RETURN_ON_FALSE(esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_NETWORK_STEERING) == ESP_OK , , TAG, "Failed to start Zigbee commissioning");
             recon_time_start = pdTICKS_TO_MS(xTaskGetTickCount());
             recon_flag = 1;
             fails_in_row = 0;
@@ -374,6 +373,9 @@ void beacon_task(void *pvParameters)
         data.failed_ping_count = failed_ping_count;
         data.successful_ping_count = successful_ping_count;
         data.recon_time = recon_time;
+        data.repeats = REPEATS;
+        data.delay = DELAY_MS;
+        data.size = PAYLOAD_SIZE;
         failed_ping_count = 0;
         successful_ping_count = 0;
 

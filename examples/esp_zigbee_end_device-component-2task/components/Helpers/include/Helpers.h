@@ -51,6 +51,9 @@ typedef struct data_to_send_s {
     uint32_t successful_ping_count;
     esp_zb_ieee_addr_t addr;
     uint32_t recon_time;
+    uint32_t repeats;
+    uint32_t delay;
+    uint32_t size;
 } data_to_send_t;
 
 #define PING_PAYLOAD_SIZE (PAYLOAD_SIZE - 3*sizeof(uint32_t))
