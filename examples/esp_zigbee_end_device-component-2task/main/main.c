@@ -10,7 +10,7 @@
 
 
 #if !defined CONFIG_ZB_ZED
-#error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
+#error Define ZB_ZED in idf.py menuconfig to compile light (Router) source code.
 #endif
 
 static const char *TAG= "ESP_ZB_END_DEVICE";
