@@ -143,4 +143,4 @@ examples/esp_zigbee_cordinator/managed_components/espressif__esp-zigbee-lib/lib/
 examples/esp_zigbee_cordinator/managed_components/espressif__esp-zigbee-lib/lib/esp32s3/libesp_zb_api.zczr.debug.a
 examples/esp_zigbee_cordinator/managed_components/espressif__esp-zigbee-lib/lib/esp32s3/libzboss_port.remote.a
 examples/esp_zigbee_cordinator/managed_components/espressif__esp-zigbee-lib/lib/esp32s3/libzboss_port.remote.debug.a
-examples/esp_zigbee_end_device-2tasks
+examples/esp_zigbee_end_device-2tasks/
