@@ -27,7 +27,6 @@ static cJSON *topology_json = NULL;
 //static QueueHandle_t uart_tx_queue;
 
 
-
 void uart_interface_init(void)
 {
     ESP_LOGI("uart_interface", "Initializing UART");
