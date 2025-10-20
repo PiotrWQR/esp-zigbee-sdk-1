@@ -12,8 +12,6 @@
 
 #include <memory.h>
 
-
-
 static const char *TAG = "esp_zigbee_include";
 
 
@@ -107,8 +105,6 @@ static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 
-
-
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
     
@@ -144,8 +140,8 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
         }
     }
 }
-
-void send_information_to_coordinator(data_to_send_t *data){
+//Wysyła strukturę data_to_send_t do koordynatora na endpoint 20
+void send_information_to_coordinator(data_to_send_t *data){ 
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
         .dst_endpoint = 20,
@@ -295,7 +291,7 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
         .asdu_length = data_length,                  // No payload for ping
         .asdu = malloc(data_length * sizeof(uint8_t)), // Allocate memory for ASDU if needed
         .tx_options = ESP_ZB_APSDE_TX_OPT_FRAG_PERMITTED | ESP_ZB_APSDE_TX_OPT_ACK_TX,// Example transmission options
-        .use_alias = false,
+        .use_alias = true,
         .alias_src_addr = 0,
         .alias_seq_num = 0,
         .radius = 4,                                 // Example radius
@@ -338,7 +334,6 @@ void button_handler(switch_func_pair_t *button_func_pair)
         display_statistics();
         esp_zigbee_include_show_tables();
         vTaskResume(beacon_task_handle);
-
     }
 }
 
@@ -349,16 +344,14 @@ bool deferred_driver_init(void)
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized;
 }
-
 //dziala jako zadanie FreeRTOS - wysyła pingi do koordynatora po wznowieniu zadania
 void beacon_task(void *pvParameters)
 {
-    const char *TAG = "BEACON TASK";
+    const char *TAG = "BEACON_TASK";
     data_to_send_t data;
     beacon_task_handle  = xTaskGetCurrentTaskHandle();
     
     while (1) {
-        
         vTaskSuspend(beacon_task_handle);
         ESP_LOGI(TAG, "Beacon task resumed");
         uint32_t passed_time = 0;
@@ -382,6 +375,5 @@ void beacon_task(void *pvParameters)
         send_information_to_coordinator(&data);
         ESP_LOGI(TAG, "Start time: %ld, End time: %ld, Passed time: %ld", data.start_time, data.end_time, passed_time);
         ESP_LOGI(TAG, "Bytes : %ld, payload size: %d", bytes, PAYLOAD_SIZE);
-        // ESP_LOGI(TAG, "One millisecond: %ld", pdMS_TO_TICKS(1));
     }
 }

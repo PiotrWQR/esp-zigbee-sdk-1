@@ -19,7 +19,6 @@ void send_topology_report(){
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        if (neighbor.device_type == ESP_ZB_DEVICE_TYPE_ROUTER) {
             report.neighbors[report.neighbor_count].short_addr = neighbor.short_addr;
             report.neighbors[report.neighbor_count].ieee_addr = *(uint64_t *)neighbor.ieee_addr;
             report.neighbors[report.neighbor_count].device_type = neighbor.device_type;
@@ -29,7 +28,6 @@ void send_topology_report(){
             report.neighbors[report.neighbor_count].outgoing_cost = neighbor.outgoing_cost;
             report.neighbors[report.neighbor_count].rssi = neighbor.rssi;
             report.neighbor_count++;
-        }
     }
     itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_info_t route = {};

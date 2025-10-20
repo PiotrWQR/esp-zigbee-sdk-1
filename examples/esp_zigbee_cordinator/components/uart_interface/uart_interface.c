@@ -55,13 +55,13 @@ void update_topology_json(cJSON *topology_report, const char* ieee_str){
 
 int sendData(const char* logName, const char* data)
 {
-    const int len = strlen(data);
+    int len = strlen(data);
     char *data_with_newline = (char *)malloc(len + 2); // +1 for newline, +1 for null terminator
     if (data_with_newline == NULL) {
         ESP_LOGE(logName, "Failed to allocate memory for data_with_newline");
         return -1; // Indicate error
     }
-    strcpy(data_with_newline, data);
+    strcpy(data_with_newline, data); //Program python wymaga zakończenia, aby wiadomość była linijką
     sprintf(data_with_newline + len, "\n"); // Append newline character
     int txBytes = uart_write_bytes(uart_num, data_with_newline, len + 1);
     ESP_LOGI(logName, "Wrote %d bytes", txBytes);
