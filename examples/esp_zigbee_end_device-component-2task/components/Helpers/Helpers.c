@@ -315,7 +315,7 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
     
     //ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
     esp_zb_lock_acquire(portMAX_DELAY);
-    esp_zb_aps_data_request(&req);
+    ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
     esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
 }

@@ -170,9 +170,9 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_nvram_erase_at_start(true);//usuwa tablice i ustawienia z pamięci NVRAM
     
     esp_zb_set_tx_power(20); //m
+    esp_zb_core_action_handler_register(zb_action_handler);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
-    esp_zb_core_action_handler_register(zb_action_handler);
     
 
     esp_zb_set_channel_mask(ESP_ZB_PRIMARY_CHANNEL_MASK);
