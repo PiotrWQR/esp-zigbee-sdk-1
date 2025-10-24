@@ -158,7 +158,7 @@ static esp_err_t zb_register_device(void){
 
 static void esp_zb_task(void *pcParameters)
 {
-    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(250));
+    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(150));
     ESP_ERROR_CHECK(esp_zb_scheduler_queue_size_set(100));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
@@ -186,21 +186,6 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_stack_main_loop();
 }
 
-
-static void action_check(void *pvParameters)
-{
-    while (1) {
-        vTaskDelay(pdMS_TO_TICKS(18000));
-        if (actions_count > 0) {
-            ESP_LOGI(TAG, "Actions count: %d", actions_count);
-            actions_count = 0;
-        } else if(!esp_zb_bdb_dev_joined()) {
-            ESP_LOGI(TAG, "No actions detected, performing factory reset");
-            esp_zb_factory_reset();
-        }
-    }
-}
-
 void app_main(void)
 {
 
@@ -213,6 +198,5 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 3*4096, NULL, 6, NULL);
-    //xTaskCreate(action_check, "action_check", 4096, NULL, 5, NULL);
-    //xTaskCreate(up, "apsde_data_print", 4096, NULL, 5, NULL);
+    xTaskCreate(beacon_task, "Zigbee_beacon", (10*1024), NULL, 3, NULL);
 }

@@ -257,7 +257,6 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
         //ESP_LOGI("APSDE bite counter", "Total bytes: %ld", byte_counter_in);
         if(ind.dst_endpoint==20){
-            
             data_recived_t *data = (data_recived_t *)ind.asdu;
             ESP_LOGW("APSDE INDICATION", "Data received from 0x%04hx: start time %ld, end time %ld, duration %ld ms", ind.src_short_addr, data->start_time, data->end_time, data->end_time - data->start_time);
             cJSON * item = cJSON_CreateObject();
@@ -269,6 +268,9 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             cJSON_AddNumberToObject(item, "successful_pings", data->successful_ping_count);
             cJSON_AddNumberToObject(item, "failed_pings", data->failed_ping_count);
             cJSON_AddNumberToObject(item, "recon_time", data->recon_time);
+            cJSON_AddNumberToObject(item, "repeats", data->repeats);
+            cJSON_AddNumberToObject(item, "delay", data->delay);
+            cJSON_AddNumberToObject(item, "size", data->size);
             cJSON * arr = cJSON_GetObjectItem(transmision_ended_json,"arr");
             cJSON_AddItemToArray(arr, item);
         }
@@ -276,7 +278,8 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             ping_count++;
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
             increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
-            ESP_LOGI("APSDE INDICATION", "Ping received from 0x%04hx: seq num %ld, send time %ld", ind.src_short_addr, ping->seq_num, ping->send_time);
+            ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
+            return true;
         }
         if(ind.dst_endpoint==32){
             topology_report_t *topology = (topology_report_t *)ind.asdu;
@@ -317,16 +320,13 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
             cJSON_AddItemToObject(topology_json, ieee_str, topology_report);
             char *json_string = cJSON_Print(topology_json);
             if (json_string != NULL) {
-                printf("Topology JSON: %s\n", json_string);
                 free(json_string);
-            } else {
-                ESP_LOGE("APSDE INDICATION TOPOLOGY REPORT", "Failed to print JSON");
-            }
+            } 
         }
         ESP_LOGI("APSDE INDICATION",
-                "Received indicator nr %ld from endpoint %d, source address 0x%04hx to endpoint %d,"
+                "Received indicator from endpoint %d, source address 0x%04hx to endpoint %d,"
                 "destination address 0x%04hx, lqi %d, rx_time %d ms, security_status %d",
-                ping_count, ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
+                ind.src_endpoint, ind.src_short_addr, ind.dst_endpoint, ind.dst_short_addr,
                 ind.lqi, ind.rx_time, ind.security_status);
         processed = false;
     } else {
@@ -335,7 +335,6 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     }
     return processed;
 }
-
 
 void create_ping(uint16_t dest_addr, bool show_log)
 {
@@ -381,7 +380,6 @@ void create_ping(uint16_t dest_addr, bool show_log)
 
 void zero_traffic_raport()
 {
-
     for(uint8_t i = 0; i < 10; i++) {
         traffic_raport[i].is_active = false;
         traffic_raport[i].short_addr = 0;
@@ -425,13 +423,16 @@ bool deferred_driver_init(void)
     return is_initialized ;
 }
 
-
 void send_indicator_toall(void)
 {
+    cJSON_Delete(topology_json);
+    topology_json = cJSON_CreateObject();
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
 
     ESP_LOGI(TAG_include, "Sending indicator to all neighbors:");
+    //create_ping(0xffff,true)
+    //return //dla testów
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
         create_ping(neighbor.short_addr, true);
         vTaskDelay(pdMS_TO_TICKS(100)); // Delay to avoid flooding the network
@@ -453,8 +454,6 @@ cJSON * get_transmision_ended_json(void) {
 }
 
 //funkcje zmieniające i pobierające ustawienia wysyłania pakietów
-
-
 void change_delay(uint32_t new_delay_ms) {
     delay_ms = new_delay_ms;
 }
@@ -486,4 +485,11 @@ uint32_t get_delay_ms(void) {
 }
 uint16_t get_payload_size(void) {
     return payload_size;
+}
+
+void clear_transmision(){
+    cJSON_Delete(transmision_ended_json);
+    transmision_ended_json = cJSON_CreateObject();
+    cJSON * arr = cJSON_CreateArray();
+    cJSON_AddItemToObject(transmision_ended_json, "arr", arr);
 }

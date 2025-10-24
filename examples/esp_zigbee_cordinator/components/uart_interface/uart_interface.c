@@ -21,10 +21,11 @@ void execute_host_request(cJSON *json);
 // Setup UART buffered IO with event queue
 static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
-static const int TX_BUF_SIZE = 1024*2;
+static const int TX_BUF_SIZE = 1524*2;
 static QueueHandle_t uart_queue;
 static cJSON *topology_json = NULL;
 //static QueueHandle_t uart_tx_queue;
+
 
 
 void uart_interface_init(void)
@@ -40,7 +41,7 @@ void uart_interface_init(void)
     };
 
     ESP_LOGI("uart_interface", "UART init with TXD pin: %d, RXD pin: %d, baud rate: %d", TXD_PIN, RXD_PIN, uart_config.baud_rate);
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE * 2, TX_BUF_SIZE * 2, 10, &uart_queue, 0));
+    ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE , TX_BUF_SIZE * 2, 10, &uart_queue, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
     uart_set_pin(uart_num, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     ESP_LOGI("uart_interface", "UART initialized");
@@ -55,13 +56,13 @@ void update_topology_json(cJSON *topology_report, const char* ieee_str){
 
 int sendData(const char* logName, const char* data)
 {
-    int len = strlen(data);
+    const int len = strlen(data);
     char *data_with_newline = (char *)malloc(len + 2); // +1 for newline, +1 for null terminator
     if (data_with_newline == NULL) {
         ESP_LOGE(logName, "Failed to allocate memory for data_with_newline");
         return -1; // Indicate error
     }
-    strcpy(data_with_newline, data); //Program python wymaga zakończenia, aby wiadomość była linijką
+    strcpy(data_with_newline, data);
     sprintf(data_with_newline + len, "\n"); // Append newline character
     int txBytes = uart_write_bytes(uart_num, data_with_newline, len + 1);
     ESP_LOGI(logName, "Wrote %d bytes", txBytes);
@@ -76,7 +77,7 @@ void rx_task(void *arg)
 
     uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE + 1);
     while (1) {
-        int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 100 / portTICK_PERIOD_MS);
+        int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 50 / portTICK_PERIOD_MS);
         int request_type ;
         if (rxBytes > 0) {
             data[rxBytes] = 0;
@@ -285,11 +286,11 @@ void execute_host_request(cJSON *json){
                 mac_config.csma_min_be = cJSON_GetObjectItem(json, "csma_min_be")->valueint;
                 changed = 1;
             }
-            if(cJSON_HasObjectItem(json, "csma_max_be") != NULL){
+            if(cJSON_HasObjectItem(json, "csma_max_be")){
                 mac_config.csma_max_be = cJSON_GetObjectItem(json, "csma_max_be")->valueint;
                 changed = 1;
             }
-            if(cJSON_HasObjectItem(json, "csma_max_backoffs") != NULL){
+            if(cJSON_HasObjectItem(json, "csma_max_backoffs")){
                 mac_config.csma_max_backoffs = cJSON_GetObjectItem(json, "csma_max_backoffs")->valueint;
                 changed = 1;
             }
@@ -377,22 +378,37 @@ void execute_host_request(cJSON *json){
     case request_type_trasmision_ended:
         {
             char* json_string = create_json_transmision_ended();
+            ESP_LOGI(TAG, "%s", json_string);
             if(json_string != NULL){
                 sendData(TAG, json_string);
                 free(json_string);
             } 
         }
         break;
+        case request_type_clear_transmission:
+        {
+            clear_transmision();
+        }
+        break;
+    case request_type_open_network:
+    {
+        esp_zb_bdb_open_network(30);
+    }
+    break;
+    case request_type_reset_network:
+    {
+        esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_FORMATION);
+    }
+    break;
     default:
         ESP_LOGI(TAG, "Unknown request type: %d", request_type);
         char fstring[50];
         sprintf(fstring, "Not recognized request type: %d", request_type);
         char* json_string = create_json_error(fstring);
+        free(fstring);
         if(json_string != NULL){
             sendData(TAG, json_string);
-            free(json_string);
         }
-        free(fstring);
         break;
     }
 

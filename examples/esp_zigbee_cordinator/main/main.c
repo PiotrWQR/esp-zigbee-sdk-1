@@ -17,8 +17,6 @@
 
 static const char *TAG= "ESP_ZB_COORDINATOR_MAIN";
 
-
-
 static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
 {
     ESP_RETURN_ON_FALSE(esp_zb_bdb_start_top_level_commissioning(mode_mask) == ESP_OK , , TAG, "Failed to start Zigbee commissioning");
@@ -167,7 +165,7 @@ static esp_err_t zb_register_device(void)
 
 static void esp_zb_task(void *pcParameters)
 {
-    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(200));
+    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(250));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
 
@@ -200,12 +198,6 @@ static void esp_zb_task(void *pcParameters)
     ESP_ERROR_CHECK(esp_zb_start(false));
     zero_traffic_raport();
     esp_zb_stack_main_loop();
-}
-
-static void esp_helper_task(void *pvParameters)
-{
-    traffic_reporter_init(pvParameters);
-    vTaskDelete(NULL);
 }
 
 void app_main(void)

@@ -38,6 +38,7 @@ uint16_t get_repeats(void);
 uint16_t get_dest_addr(void);
 uint32_t get_delay_ms(void);
 uint16_t get_payload_size(void);
+void clear_transmision(void);
 
 //tablice pomocnicze
 //tablica dopasowania typu urządzenia do nazwy enumeratora
@@ -90,6 +91,9 @@ typedef struct data_recived_s {
     uint32_t successful_ping_count;
     esp_zb_ieee_addr_t addr;
     uint32_t recon_time; //czas ponownej konfiguracji sieci po utracie połączenia (jeśli dotyczy)
+    uint32_t repeats;
+    uint32_t delay;
+    uint32_t size;
 } data_recived_t;
 
 //ładunek pakietu ping
