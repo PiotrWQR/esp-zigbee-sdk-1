@@ -104,7 +104,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
             send_topology_report(); ///wysłąnie wiadomośći o trasach i sąsiedztwie do koordynatora
             return true;
         }
-        if (ind.dst_endpoint == 10 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
+        if(ind.dst_endpoint == 10 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             ESP_LOGI("APSDE INDICATION",
                     "Received APSDE-DATA %s request with a length of %ld from endpoint %d, source address 0x%04hx to "
                     "endpoint %d, destination address 0x%04hx, rx_time %d, lqi %d, security status %s",
@@ -246,7 +246,10 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
     }
     
     //ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
-    esp_zb_lock_acquire(portMAX_DELAY);
+    while(!esp_zb_lock_acquire(portMAX_DELAY))
+    {
+        vTaskDelay(DELAY_TICK); // Wait before retrying
+    };
     ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
     esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
@@ -269,8 +272,7 @@ void send_information_to_coordinator(data_to_send_t *data){
     };
     req.asdu = malloc(req.asdu_length * sizeof(uint8_t));
     memcpy(req.asdu, data, sizeof(data_to_send_t));
-    // ESP_LOGI(TAG, "Sending data to coordinator, start time: %ld, end time: %ld, asdu length: %ld", ((data_to_send_t *)req.asdu)->start_time,
-    //     ((data_to_send_t *)req.asdu)->end_time, req.asdu_length);
+    // ESP_LOGI(TAG, "Sending data to coordinator, start time: %ld, end time: %ld, asdu length: %ld", ((data_to_send_t *)req.asdu)->start_time, ((data_to_send_t *)req.asdu)->end_time, req.asdu_length);
     esp_zb_lock_acquire(portMAX_DELAY);
     ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
     esp_zb_lock_release();

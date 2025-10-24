@@ -47,12 +47,6 @@ void uart_interface_init(void)
     ESP_LOGI("uart_interface", "UART initialized");
 }
 
-void update_topology_json(cJSON *topology_report, const char* ieee_str){
-    if(topology_json == NULL){
-        topology_json = cJSON_CreateObject();
-    }
-    cJSON_AddItemToObject(topology_json, ieee_str, topology_report);
-}
 
 int sendData(const char* logName, const char* data)
 {
@@ -70,7 +64,6 @@ int sendData(const char* logName, const char* data)
 }
 
 
-
 void rx_task(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK";
@@ -83,7 +76,7 @@ void rx_task(void *arg)
             data[rxBytes] = 0;
             cJSON *json = cJSON_Parse((char *)data);
             if(json != NULL){
-                if(cJSON_GetObjectItem(json, "request_type") == NULL){
+                if(!cJSON_HasObjectItem(json, "request_type")){
                     ESP_LOGW(RX_TASK_TAG, "No request_type in JSON");
                     char* json_string = create_json_error("No request_type in JSON");
                     if(json_string != NULL){
@@ -211,13 +204,15 @@ char* create_json_sending_settings()
     cJSON_AddNumberToObject(root, "dest_addr", get_dest_addr());
     cJSON_AddNumberToObject(root, "delay_ms", get_delay_ms());
     cJSON_AddNumberToObject(root, "payload_size", get_payload_size());
+    int8_t tx_power = 0;
+    esp_zb_get_tx_power(&tx_power);
+    cJSON_AddNumberToObject(root, "tx_power", tx_power);
 
     char *json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
     free(dest_addr_str);
     return json_string;
 }
-
 
 char* create_json_topology(){
     cJSON *root =  get_topology_json();
@@ -274,13 +269,17 @@ void execute_host_request(cJSON *json){
                 change_payload_size(payload_size);
                 ESP_LOGI(TAG, "Payload size set to %d", get_payload_size());
             }
+            if(cJSON_HasObjectItem(json, "tx_power"))
+            {
+                int8_t tx_power = cJSON_GetObjectItem(json, "tx_power")->valueint;
+                esp_zb_set_tx_power(tx_power);
+            }
             send_settings(0xffff);
         } //Send settings to all devices
         break;
     case request_type_set_cca:
         {
             esp_zb_platform_mac_config_t mac_config = {0};
-            esp_zb_platform_mac_config_get(&mac_config);
             int8_t changed = 0;
             if(cJSON_HasObjectItem(json, "csma_min_be")){
                 mac_config.csma_min_be = cJSON_GetObjectItem(json, "csma_min_be")->valueint;
@@ -294,6 +293,8 @@ void execute_host_request(cJSON *json){
                 mac_config.csma_max_backoffs = cJSON_GetObjectItem(json, "csma_max_backoffs")->valueint;
                 changed = 1;
             }
+
+            esp_zb_platform_mac_config_set(&mac_config);
             if(changed) {
                 send_settings(0xffff); //Send settings to all devices
             }
@@ -385,7 +386,7 @@ void execute_host_request(cJSON *json){
             } 
         }
         break;
-        case request_type_clear_transmission:
+    case request_type_clear_transmission:
         {
             clear_transmision();
         }
@@ -394,7 +395,7 @@ void execute_host_request(cJSON *json){
     {
         esp_zb_bdb_open_network(30);
     }
-    break;
+        break;
     case request_type_reset_network:
     {
         esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_FORMATION);

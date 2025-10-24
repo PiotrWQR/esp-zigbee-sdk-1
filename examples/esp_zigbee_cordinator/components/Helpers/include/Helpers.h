@@ -34,6 +34,7 @@ void change_delay(uint32_t new_delay_ms);
 void change_repeats(uint16_t new_repeats);
 void change_dest_addr(uint16_t new_dest_addr);
 void change_payload_size(uint16_t new_payload_size);
+
 uint16_t get_repeats(void);
 uint16_t get_dest_addr(void);
 uint32_t get_delay_ms(void);
@@ -113,8 +114,8 @@ typedef struct {
     uint8_t csma_max_be;        /*!< The maximum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
     uint8_t csma_max_backoffs;  /*!< The maximum number of backoff attempts, NB, in the CSMA-CA algorithm. */
     uint16_t payload;
+    int8_t tx_power;
 } setting_change_t;
-
 
 typedef struct neighbor_info_s{
     uint16_t short_addr;

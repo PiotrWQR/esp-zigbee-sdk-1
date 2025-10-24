@@ -27,7 +27,7 @@ static uint16_t repeats = 40;
 static uint16_t dest_addr = 0x0000;
 static uint32_t delay_ms = 1000;
 static uint16_t payload_size = 1600;
-
+static int8_t tx_power = 0;
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
@@ -66,7 +66,8 @@ bool isCoordinator(uint16_t dest_addr) {
     return (dest_addr == 0x0000);
 }
 //ta funkcja ma wyśetlić ile bajtów zostało wysłanych, jednal istnieje problem z nie zawsze oczywistą wielkością nagłówka oraz stylu fragmentacji
-uint16_t request_size(esp_zb_apsde_data_req_t *req) {
+uint16_t request_size(esp_zb_apsde_data_req_t *req) 
+{
     if (!req) {
         return 0;
     }
@@ -82,17 +83,18 @@ static switch_func_pair_t button_func_pair[] = {
 };
 
 
-
 //Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
 void send_settings(uint16_t short_addr){
+    esp_zb_platform_mac_config_t mac_config = {0};
+    esp_zb_platform_mac_config_get(&mac_config);
     setting_change_t settings = {
         .new_repeats = repeats,
         .new_dest_addr = dest_addr,
         .new_delay_ms = delay_ms,
-        .new_delay_tick = pdMS_TO_TICKS(delay_ms),
-        .csma_min_be = MIN_BACKOFF_EXPONENT,
-        .csma_max_be = MAX_BACKOFF_EXPONENT,
-        .csma_max_backoffs = MAX_BACKOFF_RETRIES,
+        .new_delay_tick = 50,
+        .csma_min_be = mac_config.csma_min_be,
+        .csma_max_be = mac_config.csma_max_be,
+        .csma_max_backoffs = mac_config.csma_max_backoffs,
         .payload = payload_size
     };
     esp_zb_apsde_data_req_t req = {
@@ -115,7 +117,6 @@ void send_settings(uint16_t short_addr){
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
 }
-
 
 //wyświetla sąsiadów w konsoli
 static void esp_show_neighbor_table()
@@ -200,6 +201,25 @@ int get_traffic_raport_index(esp_zb_network_traffic_raport_t *traffic_raport, ui
     return -1; // Not found
 }
 
+void zero_traffic_raport()
+{
+    for(uint8_t i = 0; i < 10; i++) {
+        traffic_raport[i].is_active = false;
+        traffic_raport[i].short_addr = 0;
+        traffic_raport[i].traffic_count = 0;
+    }
+}
+
+void display_traffic_report()
+{
+    ESP_LOGI(TAG_include, "Traffic Report:");
+    int i =0;
+    while(traffic_raport[i].is_active && i < 10) {
+        ESP_LOGI(TAG_include, "Device 0x%04hx: %ld packets received, %ld packets lost, expected: %ld", traffic_raport[i].short_addr, traffic_raport[i].traffic_count , traffic_raport[i].max_ping_count- traffic_raport[i].traffic_count, traffic_raport[i].max_ping_count);
+        i++;
+    }
+}
+
 static void esp_show_route_record_table()
 {
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -248,7 +268,6 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
         }
     }
 }
-
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
@@ -378,25 +397,6 @@ void create_ping(uint16_t dest_addr, bool show_log)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
-void zero_traffic_raport()
-{
-    for(uint8_t i = 0; i < 10; i++) {
-        traffic_raport[i].is_active = false;
-        traffic_raport[i].short_addr = 0;
-        traffic_raport[i].traffic_count = 0;
-    }
-}
-
-void display_traffic_report()
-{
-    ESP_LOGI(TAG_include, "Traffic Report:");
-    int i =0;
-    while(traffic_raport[i].is_active && i < 10) {
-        ESP_LOGI(TAG_include, "Device 0x%04hx: %ld packets received, %ld packets lost, expected: %ld", traffic_raport[i].short_addr, traffic_raport[i].traffic_count , traffic_raport[i].max_ping_count- traffic_raport[i].traffic_count, traffic_raport[i].max_ping_count);
-        i++;
-    }
-}
-
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
@@ -411,7 +411,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
         // vTaskDelay(pdMS_TO_TICKS(100));
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
         send_indicator_toall();
-        display_traffic_report();
+        //display_traffic_report();
         zero_traffic_raport();
     }
 }
@@ -431,12 +431,8 @@ void send_indicator_toall(void)
     esp_zb_nwk_neighbor_info_t neighbor = {};
 
     ESP_LOGI(TAG_include, "Sending indicator to all neighbors:");
-    //create_ping(0xffff,true)
-    //return //dla testów
-    while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        create_ping(neighbor.short_addr, true);
-        vTaskDelay(pdMS_TO_TICKS(100)); // Delay to avoid flooding the network
-    }
+    create_ping(0xffff,true);
+
 }
 
 cJSON * get_topology_json(void) {

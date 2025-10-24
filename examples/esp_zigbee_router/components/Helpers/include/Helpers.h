@@ -11,6 +11,7 @@ static uint32_t DELAY_TICK = 10;
 
 bool deferred_driver_init(void);
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
+void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
 void esp_zigbee_include_show_tables(void);
 void beacon_task(void *pvParameter);
 static uint8_t actions_count = 0;
@@ -24,19 +25,6 @@ static const char rel_name[] = {
         [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = 'c', /* Previous Child */
         [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = 'u', /* Unauthenticated Child */
     };
-
-
-typedef struct data_to_send_s {
-    uint32_t start_time;
-    uint32_t end_time;
-    uint32_t failed_ping_count;
-    uint32_t successful_ping_count;
-    esp_zb_ieee_addr_t addr;
-    uint32_t recon_time;
-    uint32_t repeats;
-    uint32_t delay;
-    uint32_t size;
-} data_to_send_t;
 
 static const char *dev_type_name[] = {
      [ESP_ZB_DEVICE_TYPE_COORDINATOR] = "ZC",
@@ -103,5 +91,17 @@ typedef struct {
     uint8_t csma_max_be;        /*!< The maximum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
     uint8_t csma_max_backoffs;
     uint16_t payload_size;
+    int8_t tx_power;
 } setting_change_t;
 
+typedef struct data_to_send_s {
+    uint32_t start_time;
+    uint32_t end_time;
+    uint32_t failed_ping_count;
+    uint32_t successful_ping_count;
+    esp_zb_ieee_addr_t addr;
+    uint32_t recon_time;
+    uint32_t repeats;
+    uint32_t delay;
+    uint32_t size;
+} data_to_send_t;
