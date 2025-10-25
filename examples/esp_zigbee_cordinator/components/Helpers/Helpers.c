@@ -482,7 +482,6 @@ uint32_t get_delay_ms(void) {
 uint16_t get_payload_size(void) {
     return payload_size;
 }
-
 void clear_transmision(){
     cJSON_Delete(transmision_ended_json);
     transmision_ended_json = cJSON_CreateObject();

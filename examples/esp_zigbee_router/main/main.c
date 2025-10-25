@@ -50,7 +50,6 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
                                    ESP_ZB_BDB_MODE_INITIALIZATION, 1000);
         }
         break;
-    
     case ESP_ZB_ZDO_SIGNAL_DEVICE_ANNCE:
         dev_annce_params= (esp_zb_zdo_signal_device_annce_params_t *)esp_zb_app_signal_get_params(p_sg_p);
         ESP_LOGI(TAG, "Device announce: ShortAddr(0x%04hx), ExtAddr(0x%016" PRIx64 "), Capabilities(0x%x)",

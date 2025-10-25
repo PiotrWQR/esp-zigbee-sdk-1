@@ -248,7 +248,7 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
     //ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
     while(!esp_zb_lock_acquire(portMAX_DELAY))
     {
-        vTaskDelay(DELAY_TICK); // Wait before retrying
+        vTaskDelay(0); // Wait before retrying
     };
     ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
     esp_zb_lock_release();
@@ -306,10 +306,11 @@ void beacon_task(void *pvParameters)
         bytes= PAYLOAD_SIZE * successful_ping_count;
         failed_ping_count = 0;
         successful_ping_count = 0;
-
-        send_information_to_coordinator(&data);
+        
         ESP_LOGI(TAG, "Start time: %ld, End time: %ld, Passed time: %ld", data.start_time, data.end_time, passed_time);
         ESP_LOGI(TAG, "Bytes : %ld, payload size: %d", bytes, PAYLOAD_SIZE);
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Wait before sending the report
+        send_information_to_coordinator(&data);
         bytes = 0;
     }
 }
