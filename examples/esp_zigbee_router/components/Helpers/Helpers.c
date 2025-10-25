@@ -17,6 +17,7 @@ static uint32_t recon_time = 0;
 
 //wysłanie wiadomości o trasach i sąsiedztwie do koordynatora
 void send_topology_report(){
+    esp_err_t ret = ESP_OK;
     topology_report_t report = {0};
     report.neighbor_count = 0;
     report.routes_count = 0;
@@ -59,7 +60,8 @@ void send_topology_report(){
         .radius = 5
     };
     ESP_LOGI(TAG_include, "Sending topology report to coordinator");
-    esp_zb_lock_acquire(portMAX_DELAY);
+    pre_lock:
+    ESP_GOTO_ON_FALSE(esp_zb_lock_acquire(portMAX_DELAY), 32, pre_lock, TAG_include, "Failed to acquire lock before sending topology report");
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
     
@@ -68,10 +70,14 @@ void send_topology_report(){
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 {
     if(confirm.status == 0x00) {
-        successful_ping_count++;
+        if(confirm.dst_endpoint == 10) {
+            successful_ping_count++;
+        }
         ESP_LOGI("APSDE DATA CONFIRM", "Data confirmed successfully");
     } else {
-        failed_ping_count++;
+        if(confirm.dst_endpoint == 10) {
+            failed_ping_count++;
+        }
         ESP_LOGE("APSDE DATA CONFIRM", "Data confirmation failed, error code: %d", confirm.status);
     }
 
