@@ -101,7 +101,7 @@ void rx_task(void *arg)
             }
 
             ESP_LOGI(RX_TASK_TAG, "Read %d bytes: %s", rxBytes, data);
-            ESP_LOGI(RX_TASK_TAG, "information_type: %d", request_type);
+            ESP_LOGI(RX_TASK_TAG, "Request type: %d", request_type);
         }
     }
     free(data);
@@ -241,6 +241,24 @@ char* create_json_transmision_ended(){
     return json_string;
 }
 
+char * create_json_nwk(){
+    cJSON *root = cJSON_CreateObject();
+    char* json_string = NULL;
+    if (root == NULL) {
+        json_string = create_json_error("Failed to create JSON object");
+        return json_string;
+    }
+    esp_zb_ieee_addr_t extended_pan_id;
+    esp_zb_get_extended_pan_id(extended_pan_id);
+    cJSON_AddNumberToObject(root, "information_type", json_info_nwk_data);
+    cJSON_AddStringToObject(root, "extended_pan_id", ieee_addr_to_string(extended_pan_id));
+    cJSON_AddStringToObject(root, "pan_id", short_addr_to_string(esp_zb_get_pan_id()));
+    cJSON_AddNumberToObject(root, "channel", esp_zb_get_current_channel());
+    json_string = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    return json_string;
+}
+
 void execute_host_request(cJSON *json){
     //TODO mutex for settings change
     uint8_t request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
@@ -352,24 +370,7 @@ void execute_host_request(cJSON *json){
         break;
     case request_type_nwk_data:
         {
-            cJSON *root = cJSON_CreateObject();
-            if (root == NULL) {
-                char* json_string = create_json_error("Failed to create JSON object");
-                if(json_string != NULL){
-                    sendData(TAG, json_string);
-                    free(json_string);
-                }
-                break;
-            }
-            esp_zb_ieee_addr_t extended_pan_id;
-            esp_zb_get_extended_pan_id(extended_pan_id);
-            cJSON_AddNumberToObject(root, "information_type", json_info_nwk_data);
-            cJSON_AddStringToObject(root, "extended_pan_id", ieee_addr_to_string(extended_pan_id));
-            cJSON_AddStringToObject(root, "pan_id", short_addr_to_string(esp_zb_get_pan_id()));
-            cJSON_AddNumberToObject(root, "channel", esp_zb_get_current_channel());
-
-            char *json_string = cJSON_PrintUnformatted(root);
-            cJSON_Delete(root);
+            char * json_string = create_json_nwk();
             if(json_string != NULL){
                 sendData(TAG, json_string);
                 free(json_string);
@@ -401,6 +402,40 @@ void execute_host_request(cJSON *json){
         esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_FORMATION);
     }
     break;
+    case request_send_all_data:
+        {
+           char* json_string = create_json_cca();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+            json_string = create_json_sending_settings();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+            json_string = create_json_tables();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+            json_string = create_json_topology();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+            json_string = create_json_nwk();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+            json_string = create_json_transmision_ended();
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+                free(json_string);
+            }
+        }
+        break;
     default:
         ESP_LOGI(TAG, "Unknown request type: %d", request_type);
         char fstring[50];

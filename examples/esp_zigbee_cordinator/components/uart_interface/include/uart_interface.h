@@ -32,4 +32,5 @@ enum request_type_e {
     request_type_clear_transmission = 9,
     request_type_open_network = 10,
     request_type_reset_network = 11,
+    request_send_all_data = 13,
 };
