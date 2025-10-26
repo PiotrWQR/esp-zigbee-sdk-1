@@ -269,7 +269,8 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
     }
 }
 
-bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) {
+bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) 
+{
     ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
     bool processed = false;
     if(ind.status == 0x00) {
