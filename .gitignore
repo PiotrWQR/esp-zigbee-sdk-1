@@ -6,7 +6,7 @@ compile_commands.json
 build
 build/
 build_*/
-sdkconfig
+
 sdkconfig.old
 dependencies.lock
 
