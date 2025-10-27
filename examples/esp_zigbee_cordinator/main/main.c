@@ -9,6 +9,7 @@
 #include "Helpers.h"
 #include "aps/esp_zigbee_aps.h"
 #include "uart_interface.h"
+#include "test/esp_zigbee_test_utils.h"
 
 
 #if !defined CONFIG_ZB_ZCZR
@@ -16,6 +17,21 @@
 #endif
 
 static const char *TAG= "ESP_ZB_COORDINATOR_MAIN";
+
+void mgmt_rtg_rsp_callback(esp_zb_zdo_status_t zdo_status, void *user_ctx) {
+    if (zdo_status == ESP_ZB_ZDO_STATUS_SUCCESS) {
+        ESP_LOGI(TAG, "Mgmt_Rtg_Rsp received successfully");
+
+        // The user_ctx points to the received Zigbee message buffer.
+        // You'll need to cast and parse it according to the Zigbee spec.
+        // This part is complex and requires specific knowledge of the ZBOSS buffer format.
+        // Example:
+        // esp_zb_zdo_mgmt_rtg_rsp_t *rsp = (esp_zb_zdo_mgmt_rtg_rsp_t *)user_ctx;
+        // ESP_LOGI(TAG, "Total entries: %d", rsp->total_entries);
+    } else {
+        ESP_LOGE(TAG, "Failed to get Mgmt_Rtg_Rsp, status: %d", zdo_status);
+    }
+}
 
 static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
 {
@@ -190,7 +206,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_set_channel_mask(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
-    
+    ESP_ERROR_CHECK(esp_zb_nwk_start_concentrator_mode(5, 10));
     esp_zb_secur_network_min_join_lqi_set(ESP_ZB_MIN_JOIN_LQI);
     ESP_ERROR_CHECK(esp_zb_aps_set_fragment_interframe_delay(2));
     esp_zb_set_rx_on_when_idle(true);

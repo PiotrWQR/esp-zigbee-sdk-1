@@ -143,7 +143,7 @@ static esp_err_t zb_register_device(void){
         .app_device_id = ESP_ZB_HA_TEST_DEVICE_ID,
         .app_device_version = 0,
     };
-
+    esp_zb_zcl_commissioning_init_client();
     /* Added attributes */
     ESP_ERROR_CHECK(esp_zb_basic_cluster_add_attr(basic_cluster, ESP_ZB_ZCL_ATTR_BASIC_MANUFACTURER_NAME_ID, ESP_MANUFACTURER_NAME));
     ESP_ERROR_CHECK(esp_zb_basic_cluster_add_attr(basic_cluster, ESP_ZB_ZCL_ATTR_BASIC_MODEL_IDENTIFIER_ID, ESP_MODEL_IDENTIFIER));
