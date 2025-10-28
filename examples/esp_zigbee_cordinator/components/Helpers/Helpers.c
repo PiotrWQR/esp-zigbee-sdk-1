@@ -227,11 +227,10 @@ static void esp_show_route_record_table()
         ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_address);
         ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
         ESP_LOGI(TAG_include, "  Relay: %3d", route.relay_count);
-        ESP_LOGI(TAG_include, "  Path node 1: %04hx", route.path[0]);
-        ESP_LOGI(TAG_include, "  Path node 2: %04hx", route.path[1]);
-        ESP_LOGI(TAG_include, "  Path node 3: %04hx", route.path[2]);
-        ESP_LOGI(TAG_include, "  Path node 4: %04hx", route.path[3]);
-        ESP_LOGI(TAG_include, "  Path node 5: %04hx", route.path[4]);
+        for (size_t i = 0; i < route.relay_count; i++)
+        {
+            ESP_LOGI(TAG_include, "  Path node %d: %04hx", i + 1, route.path[i]);
+        }
         ESP_LOGI(TAG_include," ");
     }
 }
@@ -326,8 +325,9 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
                 cJSON *route_json = cJSON_CreateObject();
                 cJSON_AddStringToObject(route_json, "dest_addr", short_addr_to_string(route->dest_addr));
                 cJSON_AddStringToObject(route_json, "next_hop", short_addr_to_string(route->next_hop));
+                cJSON_AddStringToObject(route_json, "flags", short_addr_to_string(route->flags));
                 cJSON_AddItemToArray(routes, route_json);
-                ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Route %d: dest addr 0x%04hx, next hop 0x%04hx", i, route->dest_addr, route->next_hop);
+                ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", "Route %d: dest addr 0x%04hx, next hop 0x%04hx, flags: 0x%02hx", i, route->dest_addr, route->next_hop, route->flags);
             }
             cJSON_AddItemToObject(topology_report, "routes", routes);
             char *ieee_str = ieee_addr_to_string(topology->ieee_addr);

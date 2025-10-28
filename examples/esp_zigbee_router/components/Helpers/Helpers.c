@@ -129,7 +129,6 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
 //wyświetla sąsiadów
 static void esp_show_neighbor_table()
 {
-
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
     const char *TAG = "Neighbor Table";
