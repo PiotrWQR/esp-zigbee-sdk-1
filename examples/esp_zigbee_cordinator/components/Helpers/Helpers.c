@@ -15,10 +15,8 @@
 #include "cJSON.h"
 static const char *TAG_include = "Helpers";
 
-static uint32_t byte_counter_out = 0;
 static uint32_t byte_counter_in = 0;
-static uint32_t byte_count_out = 0;
-static uint32_t byte_count_in = 0;
+
 static uint32_t ping_count = 0;
 static esp_zb_network_traffic_raport_t traffic_raport[10];
 static cJSON *topology_json = NULL;
@@ -27,7 +25,6 @@ static uint16_t repeats = 40;
 static uint16_t dest_addr = 0x0000;
 static uint32_t delay_ms = 1000;
 static uint16_t payload_size = 1600;
-static int8_t tx_power = 0;
 //function creating payload and sending it to the destination address
 void create_ping(uint16_t dest_addr, bool show_log);
 void create_ping_64bit(uint64_t dest_addr);
@@ -62,9 +59,6 @@ char* short_addr_to_string(uint16_t short_addr) {
     return str;
 }
 
-bool isCoordinator(uint16_t dest_addr) {
-    return (dest_addr == 0x0000);
-}
 //ta funkcja ma wyśetlić ile bajtów zostało wysłanych, jednal istnieje problem z nie zawsze oczywistą wielkością nagłówka oraz stylu fragmentacji
 uint16_t request_size(esp_zb_apsde_data_req_t *req) 
 {
@@ -77,12 +71,9 @@ uint16_t request_size(esp_zb_apsde_data_req_t *req)
     size += req->asdu_length;
     return size;
 }
-
 static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
-
-
 //Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
 void send_settings(uint16_t short_addr){
     esp_zb_platform_mac_config_t mac_config = {0};
@@ -132,7 +123,7 @@ static void esp_show_neighbor_table()
         ESP_LOGI(TAG_include,"  Neighbor: 0x%04hx", neighbor.short_addr);
         ESP_LOGI(TAG_include,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
         ESP_LOGI(TAG_include,"  Type: %3s", dev_type_name[neighbor.device_type]);
-        ESP_LOGI(TAG_include,"  Rel: %c", rel_name[neighbor.relationship]);
+        ESP_LOGI(TAG_include,"  Rel: %s", rel_name[neighbor.relationship]);
         ESP_LOGI(TAG_include,"  Depth: %3d", neighbor.depth);
         ESP_LOGI(TAG_include,"  RSSI: %3d", neighbor.rssi);
         ESP_LOGI(TAG_include,"  LQI: %3d", neighbor.lqi);
@@ -155,7 +146,9 @@ static void esp_show_route_table()
         ESP_LOGI(TAG_include, "  NextHop: 0x%04hx", route.next_hop_addr);
         ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
         ESP_LOGI(TAG_include, "  State: %6s", route_state_name[route.flags.status]);
-        ESP_LOGI(TAG_include, "  Flags: 0x%02hx", *(uint8_t *)&route.flags);
+        uint8_t flags = *(uint8_t *)&route.flags;
+        ESP_LOGI(TAG_include, "  Flags: 0x%02hx", flags);
+        ESP_LOGI(TAG_include, "  Is many-to-one: %s", route.flags.many_to_one ? "true" : "false");
         ESP_LOGI(TAG_include," ");
     }
 }
@@ -356,6 +349,60 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     return processed;
 }
 
+void esp_zb_zdo_lqi_rsp_callback(const esp_zb_zdo_mgmt_lqi_rsp_t *rsp, void *user_ctx)
+{
+    const char *TAG = "ZDO MGMT LQI RSP CALLBACK";
+    if (rsp->status == ESP_ZB_ZDP_STATUS_SUCCESS) {
+        ESP_LOGI(TAG, "LQI request successful");
+        ESP_LOGI(TAG, "Entries: %d", rsp->neighbor_table_entries);
+        ESP_LOGI(TAG, "Start Index: %d", rsp->start_index);
+        ESP_LOGI(TAG, "List Count: %d", rsp->neighbor_table_list_count);
+        for (uint8_t i = 0; i < rsp->neighbor_table_list_count; i++) {
+            esp_zb_zdo_neighbor_table_list_record_t *record = &rsp->neighbor_table_list[i];
+            ESP_LOGI(TAG, "Neighbor %d:", i);
+            ESP_LOGI(TAG, "  Ext pan id: 0x%016" PRIx64, *(uint64_t *)record->extended_pan_id);
+            ESP_LOGI(TAG, "  Ext Addr: 0x%016" PRIx64, *(uint64_t *)record->extended_addr);
+            ESP_LOGI(TAG, "  Network Addr: 0x%04hx", record->network_addr);
+            ESP_LOGI(TAG, "  Device Type: %s", dev_type_name[record->device_type]);
+            ESP_LOGI(TAG, "  Rx On When Idle: %s", rx_to_name[record->rx_when_idle]);
+            ESP_LOGI(TAG, "  Relationship: %s", rel_name[record->relationship]);
+            ESP_LOGI(TAG, "  Permit Joining: %s", record->permit_join ? "Yes" : "No");
+            ESP_LOGI(TAG, "  LQI: %d", record->lqi);
+            ESP_LOGI(TAG, "  Depth: %d", record->depth);
+        }
+    } else {
+        ESP_LOGE(TAG_include, "LQI request failed with status: %d", rsp->status);
+    }
+}
+
+void esp_zb_zdo_nwk_addr_rsp_callback(esp_zb_zdp_status_t status,  esp_zb_zdo_nwk_addr_rsp_t *resp, void *user_ctx)
+{
+    const char *TAG = "ZDO MGMT NWK ADDR RSP CALLBACK";
+    if (status == ESP_ZB_ZDP_STATUS_SUCCESS) {
+        ESP_LOGI(TAG, "NWK ADDR request successful");
+        ESP_LOGI(TAG, "  Ext Addr: 0x%016" PRIx64, *(uint64_t *)resp->ieee_addr);
+        ESP_LOGI(TAG, "Start Index: %d", resp->nwk_addr);
+        esp_zb_zdo_nwk_addr_list_t *addr_list = resp->ext_resp;
+        for (uint8_t i = 0; i < addr_list->count; i++) {
+            ESP_LOGI(TAG, "  Network Addr %d: 0x%04hx", i, addr_list->nwk_addresses[i]);
+        }
+
+            
+    } else {
+        ESP_LOGE(TAG, "RTG request failed with status: %d", status);
+    }
+}
+
+uint16_t get_neighbor_addr()
+{
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_neighbor_info_t neighbor = {};
+    if(ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
+        return neighbor.short_addr;
+    }
+    return 0;
+}
+
 void create_ping(uint16_t dest_addr, bool show_log)
 {
     uint32_t data_length = 50; // Example payload length
@@ -402,16 +449,13 @@ void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
         esp_zigbee_include_show_tables();
-        //create_ping_64(0x404ccafffe5db4d4); // Example 64-bit address
-        //refresh_routes();
-        // create_ping_64(0x404ccafffe5de2a8); // Example 64-bit address
-        // vTaskDelay(pdMS_TO_TICKS(100));
-        // create_ping_64(0x404ccafffe5fa7f4); // Example 64-bit address
-        // vTaskDelay(pdMS_TO_TICKS(100));
-        // create_ping_64(0x404ccafffe5fb4d4); // Example 64-bit address
-        // vTaskDelay(pdMS_TO_TICKS(100));
+        esp_zb_zdo_mgmt_lqi_req_param_t lqi_req = {
+            .dst_addr = 0xffff,
+            .start_index = 0
+        };
+        esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
-        send_indicator_toall();
+        //send_indicator_toall();
         //display_traffic_report();
         zero_traffic_raport();
     }
@@ -428,9 +472,6 @@ void send_indicator_toall(void)
 {
     cJSON_Delete(topology_json);
     topology_json = cJSON_CreateObject();
-    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
-    esp_zb_nwk_neighbor_info_t neighbor = {};
-
     ESP_LOGI(TAG_include, "Sending indicator to all neighbors:");
     create_ping(0xffff,true);
 

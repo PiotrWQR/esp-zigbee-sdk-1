@@ -50,13 +50,13 @@ static const char *dev_type_name[] = {
     [ESP_ZB_DEVICE_TYPE_NONE]        = "UNK",
 };
 //tablica nazw relacji z innymi urządzeniami
-static const char rel_name[] = {
-    [ESP_ZB_NWK_RELATIONSHIP_PARENT]                = 'P', /* Parent */
-    [ESP_ZB_NWK_RELATIONSHIP_CHILD]                 = 'C', /* Child */
-    [ESP_ZB_NWK_RELATIONSHIP_SIBLING]               = 'S', /* Sibling */
-    [ESP_ZB_NWK_RELATIONSHIP_NONE_OF_THE_ABOVE]     = 'O', /* Others */
-    [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = 'c', /* Previous Child */
-    [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = 'u', /* Unauthenticated Child */
+static const char *rel_name[] = {
+    [ESP_ZB_NWK_RELATIONSHIP_PARENT]                = "Parent", /* Parent */
+    [ESP_ZB_NWK_RELATIONSHIP_CHILD]                 = "Child", /* Child */
+    [ESP_ZB_NWK_RELATIONSHIP_SIBLING]               = "Sibling", /* Sibling */
+    [ESP_ZB_NWK_RELATIONSHIP_NONE_OF_THE_ABOVE]     = "Others", /* Others */
+    [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = "Previous Child", /* Previous Child */
+    [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = "Unauthenticated Child", /* Unauthenticated Child */
 };
 //tablica nazw stanów trasy
 static const char *route_state_name[] = {
@@ -65,14 +65,13 @@ static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED] = "Fail",
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
-//tablica rozmiarów nagłówków w zależności od trybu adresowania(niedopracowana)
-static const uint8_t aps_address_modes_size[] = {
-    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
-    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
-    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 37,
-    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 49,
-    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
+
+static const char *rx_to_name[] = {
+   [0] = "Reciver is off",
+   [1]  = "Reciver is on",
+   [2]  = "Reciver is unknown",
 };
+
 
 typedef struct esp_zb_network_traffic_raport_s {
     uint16_t short_addr;      //Short address of the reporting device
@@ -141,3 +140,18 @@ typedef struct topology_report_s {
     int16_t routes_count;
     route_info_t routes[10];
 } topology_report_t;
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+//tablica rozmiarów nagłówków w zależności od trybu adresowania(niedopracowana)
+static const uint8_t aps_address_modes_size[] = {
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 37,
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 49,
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
+};

@@ -11,27 +11,11 @@
 #include "uart_interface.h"
 #include "test/esp_zigbee_test_utils.h"
 
-
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
 #endif
 
 static const char *TAG= "ESP_ZB_COORDINATOR_MAIN";
-
-void mgmt_rtg_rsp_callback(esp_zb_zdo_status_t zdo_status, void *user_ctx) {
-    if (zdo_status == ESP_ZB_ZDO_STATUS_SUCCESS) {
-        ESP_LOGI(TAG, "Mgmt_Rtg_Rsp received successfully");
-
-        // The user_ctx points to the received Zigbee message buffer.
-        // You'll need to cast and parse it according to the Zigbee spec.
-        // This part is complex and requires specific knowledge of the ZBOSS buffer format.
-        // Example:
-        // esp_zb_zdo_mgmt_rtg_rsp_t *rsp = (esp_zb_zdo_mgmt_rtg_rsp_t *)user_ctx;
-        // ESP_LOGI(TAG, "Total entries: %d", rsp->total_entries);
-    } else {
-        ESP_LOGE(TAG, "Failed to get Mgmt_Rtg_Rsp, status: %d", zdo_status);
-    }
-}
 
 static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
 {

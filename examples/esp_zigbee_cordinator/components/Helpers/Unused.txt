@@ -96,3 +96,13 @@ void traffic_reporter_init(void *pvParameters) {
         byte_counter_out = 0; // Reset the counter after sending the report;
     }
 }
+
+
+        //create_ping_64(0x404ccafffe5db4d4); // Example 64-bit address
+        //refresh_routes();
+        // create_ping_64(0x404ccafffe5de2a8); // Example 64-bit address
+        // vTaskDelay(pdMS_TO_TICKS(100));
+        // create_ping_64(0x404ccafffe5fa7f4); // Example 64-bit address
+        // vTaskDelay(pdMS_TO_TICKS(100));
+        // create_ping_64(0x404ccafffe5fb4d4); // Example 64-bit address
+        // vTaskDelay(pdMS_TO_TICKS(100));
