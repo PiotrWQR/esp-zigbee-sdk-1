@@ -112,44 +112,47 @@ void send_settings(uint16_t short_addr){
 //wyświetla sąsiadów w konsoli
 static void esp_show_neighbor_table()
 {
-
+    const char* TAG = "Neighbor Table";
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
 
-    ESP_LOGI(TAG_include,"Network Neighbors:");
+    ESP_LOGI(TAG,"Network Neighbors:");
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
-        ESP_LOGI(TAG_include,"Index: %3d", itor);
-        ESP_LOGI(TAG_include,"  Age: %3d", neighbor.age);
-        ESP_LOGI(TAG_include,"  Neighbor: 0x%04hx", neighbor.short_addr);
-        ESP_LOGI(TAG_include,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
-        ESP_LOGI(TAG_include,"  Type: %3s", dev_type_name[neighbor.device_type]);
-        ESP_LOGI(TAG_include,"  Rel: %s", rel_name[neighbor.relationship]);
-        ESP_LOGI(TAG_include,"  Depth: %3d", neighbor.depth);
-        ESP_LOGI(TAG_include,"  RSSI: %3d", neighbor.rssi);
-        ESP_LOGI(TAG_include,"  LQI: %3d", neighbor.lqi);
-        ESP_LOGI(TAG_include,"  Cost: o:%d", neighbor.outgoing_cost);
-        ESP_LOGI(TAG_include,"  Timeout coounter: %ld", neighbor.timeout_counter);
-        ESP_LOGI(TAG_include,"  Device timeeout: %ld", neighbor.device_timeout);
-        ESP_LOGI(TAG_include," ");
+        ESP_LOGI(TAG,"Index: %3d", itor);
+        ESP_LOGI(TAG,"  Age: %3d", neighbor.age);
+        ESP_LOGI(TAG,"  Neighbor: 0x%04hx", neighbor.short_addr);
+        ESP_LOGI(TAG,"  IEEE: 0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
+        ESP_LOGI(TAG,"  Type: %3s", dev_type_name[neighbor.device_type]);
+        ESP_LOGI(TAG,"  Rel: %s", rel_name[neighbor.relationship]);
+        ESP_LOGI(TAG,"  Depth: %3d", neighbor.depth);
+        ESP_LOGI(TAG,"  RSSI: %3d", neighbor.rssi);
+        ESP_LOGI(TAG,"  LQI: %3d", neighbor.lqi);
+        ESP_LOGI(TAG,"  Cost: o:%d", neighbor.outgoing_cost);
+        ESP_LOGI(TAG,"  Timeout counter: %ld", neighbor.timeout_counter);
+        ESP_LOGI(TAG,"  Device timeout: %ld", neighbor.device_timeout);
+        ESP_LOGI(TAG," ");
     }
 }
 //wyswietla trasy
 static void esp_show_route_table()
 {
+    const char* TAG = "Route Table";
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_info_t route = {};
 
-    ESP_LOGI(TAG_include, "Zigbee Network Routes:");
+    ESP_LOGI(TAG, "Zigbee Network Routes:");
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
-        ESP_LOGI(TAG_include,"Index: %3d", itor);
-        ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_addr);
-        ESP_LOGI(TAG_include, "  NextHop: 0x%04hx", route.next_hop_addr);
-        ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
-        ESP_LOGI(TAG_include, "  State: %6s", route_state_name[route.flags.status]);
+        ESP_LOGI(TAG, "Index: %3d", itor);
+        ESP_LOGI(TAG, "  DestAddr: 0x%04hx", route.dest_addr);
+        ESP_LOGI(TAG, "  NextHop: 0x%04hx", route.next_hop_addr);
+        ESP_LOGI(TAG, "  Expiry: %4d", route.expiry);
+        ESP_LOGI(TAG, "  State: %6s", route_state_name[route.flags.status]);
         uint8_t flags = *(uint8_t *)&route.flags;
-        ESP_LOGI(TAG_include, "  Flags: 0x%02hx", flags);
-        ESP_LOGI(TAG_include, "  Is many-to-one: %s", route.flags.many_to_one ? "true" : "false");
-        ESP_LOGI(TAG_include," ");
+        ESP_LOGI(TAG, "  Flags: 0x%02hx", flags);
+        ESP_LOGI(TAG, "  Group ID: %d", route.flags.group_id);
+        ESP_LOGI(TAG, "  Many-to-One: %d", route.flags.many_to_one);
+        ESP_LOGI(TAG, "  No Route Cache: %d", route.flags.no_route_cache);
+        ESP_LOGI(TAG, "  Route Record Required: %d", route.flags.route_record_required);
     }
 }
 
@@ -224,12 +227,11 @@ static void esp_show_route_record_table()
         ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_address);
         ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
         ESP_LOGI(TAG_include, "  Relay: %3d", route.relay_count);
-        ESP_LOGI(TAG_include, "  Path node 1: %3d", route.path[0]);
-        ESP_LOGI(TAG_include, "  Path node 2: %3d", route.path[1]);
-        ESP_LOGI(TAG_include, "  Path node 3: %3d", route.path[2]);
-        ESP_LOGI(TAG_include, "  Path node 4: %3d", route.path[3]);
-        ESP_LOGI(TAG_include, "  Path node 5: %3d", route.path[4]);
-        ESP_LOGI(TAG_include, "  Address: %ld", (long)&route);
+        ESP_LOGI(TAG_include, "  Path node 1: %04hx", route.path[0]);
+        ESP_LOGI(TAG_include, "  Path node 2: %04hx", route.path[1]);
+        ESP_LOGI(TAG_include, "  Path node 3: %04hx", route.path[2]);
+        ESP_LOGI(TAG_include, "  Path node 4: %04hx", route.path[3]);
+        ESP_LOGI(TAG_include, "  Path node 5: %04hx", route.path[4]);
         ESP_LOGI(TAG_include," ");
     }
 }
@@ -453,7 +455,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
             .dst_addr = 0xffff,
             .start_index = 0
         };
-        esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
+        //esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
         //send_indicator_toall();
         //display_traffic_report();

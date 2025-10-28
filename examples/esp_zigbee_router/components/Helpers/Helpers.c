@@ -145,7 +145,6 @@ static void esp_show_neighbor_table()
         ESP_LOGI(TAG,"  Depth: %3d", neighbor.depth);
         ESP_LOGI(TAG,"  LQI: %3d", neighbor.lqi);
         ESP_LOGI(TAG,"  Cost: o:%d", neighbor.outgoing_cost);
-
     }
     ESP_LOGI(TAG," ");
 }
@@ -170,20 +169,23 @@ void esp_show_record_route_table()
 }
 void esp_show_route_table()
 {
-
+    const char *TAG = "Route Table";
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_info_t route = {};
 
-    ESP_LOGI(TAG_include, "Zigbee Network Routes:");
+    ESP_LOGI(TAG, "Zigbee Network Routes:");
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route)) {
-        ESP_LOGI(TAG_include,"Index: %3d", itor);
-        ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_addr);
-        ESP_LOGI(TAG_include, "  NextHop: 0x%04hx", route.next_hop_addr);
-        ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
-        ESP_LOGI(TAG_include, "  State: %6s", route_state_name[route.flags.status]);
-        ESP_LOGI(TAG_include, "  Flags: 0x%02x", *(uint8_t *)&route.flags);
-    }
-    ESP_LOGI(TAG_include," ");
+        ESP_LOGI(TAG,"Index: %3d", itor);
+        ESP_LOGI(TAG, "  DestAddr: 0x%04hx", route.dest_addr);
+        ESP_LOGI(TAG, "  NextHop: 0x%04hx", route.next_hop_addr);
+        ESP_LOGI(TAG, "  Expiry: %4d", route.expiry);
+        ESP_LOGI(TAG, "  State: %6s", route_state_name[route.flags.status]);
+        ESP_LOGI(TAG, "  Flags: 0x%02x", *(uint8_t *)&route.flags);
+        ESP_LOGI(TAG, "  Group ID: %d", route.flags.group_id);
+        ESP_LOGI(TAG, "  Many-to-One: %d", route.flags.many_to_one);
+        ESP_LOGI(TAG, "  No Route Cache: %d", route.flags.no_route_cache);
+        ESP_LOGI(TAG, "  Route Record Required: %d", route.flags.route_record_required);}
+    ESP_LOGI(TAG, " ");
 
 }
 void esp_zigbee_include_show_tables(void) 

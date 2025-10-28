@@ -7,6 +7,7 @@
 #include "platform/esp_zigbee_platform.h"
 #include "Helpers.h"
 #include "aps/esp_zigbee_aps.h"
+#include "zcl/esp_zigbee_zcl_common.h"
 
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
@@ -134,6 +135,7 @@ static esp_err_t zb_action_handler(esp_zb_core_action_callback_id_t callback_id,
 
 static esp_err_t zb_register_device(void){
     esp_zb_attribute_list_t *basic_cluster = esp_zb_basic_cluster_create(NULL);
+    esp_zb_attribute_list_t *commissioning_cluster = esp_zb_commissioning_cluster_create(NULL);
     esp_zb_cluster_list_t *cluster_list = esp_zb_zcl_cluster_list_create();
     esp_zb_ep_list_t *ep_list = esp_zb_ep_list_create();
 
@@ -143,12 +145,36 @@ static esp_err_t zb_register_device(void){
         .app_device_id = ESP_ZB_HA_TEST_DEVICE_ID,
         .app_device_version = 0,
     };
-    esp_zb_zcl_commissioning_init_client();
+    //esp_zb_zcl_commissioning_init_client();
     /* Added attributes */
     ESP_ERROR_CHECK(esp_zb_basic_cluster_add_attr(basic_cluster, ESP_ZB_ZCL_ATTR_BASIC_MANUFACTURER_NAME_ID, ESP_MANUFACTURER_NAME));
     ESP_ERROR_CHECK(esp_zb_basic_cluster_add_attr(basic_cluster, ESP_ZB_ZCL_ATTR_BASIC_MODEL_IDENTIFIER_ID, ESP_MODEL_IDENTIFIER));
+    uint8_t radius = 5;
+    ESP_ERROR_CHECK(esp_zb_cluster_add_attr(commissioning_cluster,
+            ESP_ZB_ZCL_CLUSTER_ID_COMMISSIONING,
+            ESP_ZB_ZCL_ATTR_COMMISSIONING_CONCENTRATOR_RADIUS_ID,
+            ESP_ZB_ZCL_ATTR_TYPE_U8,
+            ESP_ZB_ZCL_ATTR_ACCESS_READ_WRITE,
+            &radius));
+    uint8_t concentrator_flag = 1;
+    ESP_ERROR_CHECK(esp_zb_cluster_add_attr(commissioning_cluster,
+            ESP_ZB_ZCL_CLUSTER_ID_COMMISSIONING,
+            ESP_ZB_ZCL_ATTR_COMMISSIONING_CONCENTRATOR_FLAG_ID,
+            ESP_ZB_ZCL_ATTR_TYPE_U8,
+            ESP_ZB_ZCL_ATTR_ACCESS_READ_WRITE,
+            &concentrator_flag));
+    uint8_t discovery_time = 10;
+    ESP_ERROR_CHECK(esp_zb_cluster_add_attr(commissioning_cluster,
+            ESP_ZB_ZCL_CLUSTER_ID_COMMISSIONING,
+            ESP_ZB_ZCL_ATTR_COMMISSIONING_CONCENTRATOR_DISCOVERY_TIME_ID,
+            ESP_ZB_ZCL_ATTR_TYPE_U8,
+            ESP_ZB_ZCL_ATTR_ACCESS_READ_ONLY,
+            &discovery_time));
+
+
     /* Added clusters */
     ESP_ERROR_CHECK(esp_zb_cluster_list_add_basic_cluster(cluster_list, basic_cluster, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE));
+    ESP_ERROR_CHECK(esp_zb_cluster_list_add_commissioning_cluster(cluster_list, commissioning_cluster, ESP_ZB_ZCL_CLUSTER_CLIENT_ROLE));
     /* Added endpoints */
     ESP_ERROR_CHECK(esp_zb_ep_list_add_ep(ep_list, cluster_list, endpoint_config));
     /* Register device */
@@ -161,7 +187,7 @@ static void esp_zb_task(void *pcParameters)
     ESP_ERROR_CHECK(esp_zb_scheduler_queue_size_set(100));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
-
+    //esp_zb_set_trace_level_mask(ESP_ZB_TRACE_LEVEL_INFO, ESP_ZB_TRACE_SUBSYSTEM_NWK);
     esp_zb_nvram_erase_at_start(true);
 
     //esp_zb_zdo_touchlink_set_rssi_threshold(ESP_ZB_TOUCHLINK_RSSI_THRESHOLD);
