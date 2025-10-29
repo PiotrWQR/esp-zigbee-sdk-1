@@ -6,6 +6,7 @@
 void uart_interface_init(void);
 void rx_task(void *arg);
 char* create_json_error(char *error_description);
+void send_all_data_to_host(const char TAG[]);
 
 
 enum json_information_type_e {

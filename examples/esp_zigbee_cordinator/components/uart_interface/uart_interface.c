@@ -117,11 +117,13 @@ char* create_json_tables()
     cJSON_AddNumberToObject(root, "information_type", json_info_tables);
     cJSON_AddArrayToObject(root, "neighbors");  
     cJSON_AddArrayToObject(root, "routes");
+    cJSON_AddArrayToObject(root, "route_records");
 
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
     cJSON *neighbors = cJSON_GetObjectItem(root, "neighbors");
     cJSON *routes = cJSON_GetObjectItem(root, "routes");
+    cJSON *routes_records = cJSON_GetObjectItem(root, "route_records");
     while (ESP_OK == esp_zb_nwk_get_next_neighbor(&itor, &neighbor)) {
         cJSON *neighbor_item = cJSON_CreateObject();
         char dest_addr_str[8];
@@ -147,6 +149,18 @@ char* create_json_tables()
         cJSON_AddStringToObject(route_item, "next_hop", short_addr_to_string(route.next_hop_addr));
         cJSON_AddNumberToObject(route_item, "flags", *(uint8_t *)&route.flags);
         cJSON_AddItemToArray(routes, route_item);
+    }
+    itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_route_record_info_t route_record = {};
+    while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route_record)) {
+        cJSON *route_record_item = cJSON_CreateObject();
+        cJSON_AddStringToObject(route_record_item, "dest_addr", short_addr_to_string(route_record.dest_address));
+        cJSON_AddNumberToObject(route_record_item, "expiry", route_record.expiry);
+        cJSON *path_array = cJSON_AddArrayToObject(route_record_item, "path");
+        for (uint8_t i = 0; i < route_record.relay_count; i++) {
+            cJSON_AddItemToArray(path_array, cJSON_CreateString(short_addr_to_string(route_record.path[i])));
+        }
+        cJSON_AddItemToArray(routes_records, route_record_item);
     }
 
     char *json_string = cJSON_PrintUnformatted(root);
@@ -235,8 +249,8 @@ char* create_json_transmision_ended(){
     }
 
     char *json_string = cJSON_PrintUnformatted(root);
-    printf(json_string);
-    printf('\n')
+    printf("%s", json_string);
+    printf("\n");
     cJSON_Delete(root);
 
     return json_string;
@@ -405,48 +419,55 @@ void execute_host_request(cJSON *json){
     break;
     case request_send_all_data:
         {
-           char* json_string = create_json_cca();
-            if(json_string != NULL){
-                sendData(TAG, json_string);
-                free(json_string);
-            }
-            json_string = create_json_sending_settings();
-            if(json_string != NULL){
-                sendData(TAG, json_string);
-                free(json_string);
-            }
-            json_string = create_json_tables();
-            if(json_string != NULL){
-                sendData(TAG, json_string);
-                free(json_string);
-            }
-            json_string = create_json_topology();
-            if(json_string != NULL){
-                sendData(TAG, json_string);
-                free(json_string);
-            }
-            json_string = create_json_nwk();
-            if(json_string != NULL){
-                sendData(TAG, json_string);
-                free(json_string);
-            }
-            json_string = create_json_transmision_ended();
-            if(json_string != NULL){
-                sendData(TAG, json_string);
-                free(json_string);
-            }
+            send_all_data_to_host(TAG);
         }
         break;
     default:
-        ESP_LOGI(TAG, "Unknown request type: %d", request_type);
-        char fstring[50];
-        sprintf(fstring, "Not recognized request type: %d", request_type);
-        char* json_string = create_json_error(fstring);
-        free(fstring);
-        if(json_string != NULL){
-            sendData(TAG, json_string);
+        {
+            ESP_LOGI(TAG, "Unknown request type: %d", request_type);
+            char fstring[50];
+            sprintf(fstring, "Not recognized request type: %d", request_type);
+            char* json_string = create_json_error(fstring);
+            free(fstring);
+            if(json_string != NULL){
+                sendData(TAG, json_string);
+            }
         }
         break;
     }
 
+}
+
+
+void send_all_data_to_host(const char TAG[]){
+    char* json_string = create_json_cca();
+    if(json_string != NULL){
+        sendData(TAG, json_string);
+        free(json_string);
+    }
+    json_string = create_json_sending_settings();
+    if(json_string != NULL){
+        sendData(TAG, json_string);
+        free(json_string);
+    }
+    json_string = create_json_tables();
+    if(json_string != NULL){
+        sendData(TAG, json_string);
+        free(json_string);
+    }
+    json_string = create_json_topology();
+    if(json_string != NULL){
+        sendData(TAG, json_string);
+        free(json_string);
+    }
+    json_string = create_json_nwk();
+    if(json_string != NULL){
+        sendData(TAG, json_string);
+        free(json_string);
+    }
+    json_string = create_json_transmision_ended();
+    if(json_string != NULL){
+        sendData(TAG, json_string);
+        free(json_string);
+    }
 }

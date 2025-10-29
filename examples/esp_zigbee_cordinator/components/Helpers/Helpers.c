@@ -218,20 +218,21 @@ void display_traffic_report()
 
 static void esp_show_route_record_table()
 {
+    const char* TAG = "Route Record Table";
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_record_info_t route = {};
 
-    ESP_LOGI(TAG_include, "Zigbee Network Routes Records:");
+    ESP_LOGI(TAG, "Zigbee Network Routes Records:");
     while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route)) {
-        ESP_LOGI(TAG_include,"Index: %3d", itor);
-        ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_address);
-        ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
-        ESP_LOGI(TAG_include, "  Relay: %3d", route.relay_count);
+        ESP_LOGI(TAG, "Index: %3d", itor);
+        ESP_LOGI(TAG, "  DestAddr: 0x%04hx", route.dest_address);
+        ESP_LOGI(TAG, "  Expiry: %4d", route.expiry);
+        ESP_LOGI(TAG, "  Relay: %3d", route.relay_count);
         for (size_t i = 0; i < route.relay_count; i++)
         {
-            ESP_LOGI(TAG_include, "  Path node %d: %04hx", i + 1, route.path[i]);
+            ESP_LOGI(TAG, "  Path node %d: %04hx", i + 1, route.path[i]);
         }
-        ESP_LOGI(TAG_include," ");
+        ESP_LOGI(TAG, " ");
     }
 }
 
@@ -395,6 +396,37 @@ void esp_zb_zdo_nwk_addr_rsp_callback(esp_zb_zdp_status_t status,  esp_zb_zdo_nw
     }
 }
 
+void energy_detect_callback(esp_zb_zdp_status_t status, uint16_t count, esp_zb_energy_detect_channel_info_t *channel_info)
+{
+    const char *TAG = "ZDO ENERGY DETECT RSP CALLBACK";
+    if (status == ESP_ZB_ZDP_STATUS_SUCCESS) {
+        ESP_LOGI(TAG, "Energy Detect request successful");
+        ESP_LOGI(TAG, "  Channel Number: %d", channel_info->channel_number);
+        ESP_LOGI(TAG, "  Energy (dBm) Number: %d", channel_info->energy_detected);
+        ESP_LOGI(TAG, "  Count: %d", count);
+    } else {
+        ESP_LOGE(TAG, "Energy Detect request failed with status: %d", status);
+    }
+}
+
+void update_notify_callback(const esp_zb_zdo_mgmt_update_notify_t *notify, void *user_ctx)
+{
+    const char *TAG = "ZDO MGMT NWK UPDATE NOTIFY CALLBACK";
+    if (notify->status == ESP_ZB_ZDP_STATUS_SUCCESS) {
+        ESP_LOGI(TAG, "Network Update Notify received successfully");
+        for(uint8_t i = 0; i < 26; i++) {
+            if(notify->scanned_channels & (1 << i)) {
+                ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
+            }
+        }
+        ESP_LOGI(TAG, "Total Transmissions: %d", notify->total_transmission);
+        ESP_LOGI(TAG, "Transmission Failures: %d", notify->transmission_failures);
+
+    } else {
+        ESP_LOGE(TAG, "Network Update Notify failed with status: 0x%02x", notify->status);
+    }
+}
+
 uint16_t get_neighbor_addr()
 {
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -456,6 +488,12 @@ void button_handler(switch_func_pair_t *button_func_pair)
             .start_index = 0
         };
         //esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
+
+        esp_zb_zdo_mgmt_nwk_update_req_param_t update_req = {
+            .scan_channels = 0x07FFF800, // Example channel mask
+            .scan_duration = 3              // Example scan duration
+        };
+        esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, NULL);
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
         //send_indicator_toall();
         //display_traffic_report();
