@@ -50,13 +50,13 @@ static const char *dev_type_name[] = {
     [ESP_ZB_DEVICE_TYPE_NONE]        = "UNK",
 };
 //tablica nazw relacji z innymi urządzeniami
-static const char rel_name[] = {
-    [ESP_ZB_NWK_RELATIONSHIP_PARENT]                = 'P', /* Parent */
-    [ESP_ZB_NWK_RELATIONSHIP_CHILD]                 = 'C', /* Child */
-    [ESP_ZB_NWK_RELATIONSHIP_SIBLING]               = 'S', /* Sibling */
-    [ESP_ZB_NWK_RELATIONSHIP_NONE_OF_THE_ABOVE]     = 'O', /* Others */
-    [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = 'c', /* Previous Child */
-    [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = 'u', /* Unauthenticated Child */
+static const char *rel_name[] = {
+    [ESP_ZB_NWK_RELATIONSHIP_PARENT]                = "Parent", /* Parent */
+    [ESP_ZB_NWK_RELATIONSHIP_CHILD]                 = "Child", /* Child */
+    [ESP_ZB_NWK_RELATIONSHIP_SIBLING]               = "Sibling", /* Sibling */
+    [ESP_ZB_NWK_RELATIONSHIP_NONE_OF_THE_ABOVE]     = "Others", /* Others */
+    [ESP_ZB_NWK_RELATIONSHIP_PREVIOUS_CHILD]        = "Previous Child", /* Previous Child */
+    [ESP_ZB_NWK_RELATIONSHIP_UNAUTHENTICATED_CHILD] = "Unauthenticated Child", /* Unauthenticated Child */
 };
 //tablica nazw stanów trasy
 static const char *route_state_name[] = {
@@ -65,15 +65,35 @@ static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED] = "Fail",
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
-//tablica rozmiarów nagłówków w zależności od trybu adresowania(niedopracowana)
-static const uint8_t aps_address_modes_size[] = {
-    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
-    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
-    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 37,
-    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 49,
-    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
+
+static const char *rx_to_name[] = {
+   [0] = "Reciver is off",
+   [1]  = "Reciver is on",
+   [2]  = "Reciver is unknown",
 };
 
+static const char * nwk_ind_name[] = {
+    [ESP_ZB_NWK_COMMAND_STATUS_NO_ROUTE_AVAILABLE]          = "No route available",
+    [ESP_ZB_NWK_COMMAND_STATUS_TREE_LINK_FAILURE]           = "Tree link failure",
+    [ESP_ZB_NWK_COMMAND_STATUS_NONE_TREE_LINK_FAILURE]      = "None-tree link failure",
+    [ESP_ZB_NWK_COMMAND_STATUS_LOW_BATTERY_LEVEL]           = "Low battery level",
+    [ESP_ZB_NWK_COMMAND_STATUS_NO_ROUTING_CAPACITY]         = "No routing capacity",
+    [ESP_ZB_NWK_COMMAND_STATUS_NO_INDIRECT_CAPACITY]        = "No indirect capacity",
+    [ESP_ZB_NWK_COMMAND_STATUS_INDIRECT_TRANSACTION_EXPIRY] = "Indirect transaction expiry",
+    [ESP_ZB_NWK_COMMAND_STATUS_TARGET_DEVICE_UNAVAILABLE]   = "Target device unavailable",
+    [ESP_ZB_NWK_COMMAND_STATUS_TARGET_ADDRESS_UNALLOCATED]  = "Target address unallocated",
+    [ESP_ZB_NWK_COMMAND_STATUS_PARENT_LINK_FAILURE]         = "Parent link failure",
+    [ESP_ZB_NWK_COMMAND_STATUS_VALIDATE_ROUTE]              = "Validate route",
+    [ESP_ZB_NWK_COMMAND_STATUS_SOURCE_ROUTE_FAILURE]        = "Source route failure",
+    [ESP_ZB_NWK_COMMAND_STATUS_MANY_TO_ONE_ROUTE_FAILURE]   = "Many-to-one route failure",
+    [ESP_ZB_NWK_COMMAND_STATUS_ADDRESS_CONFLICT]            = "Address conflict",
+    [ESP_ZB_NWK_COMMAND_STATUS_VERIFY_ADDRESS]              = "Verify address",
+    [ESP_ZB_NWK_COMMAND_STATUS_PAN_IDENTIFIER_UPDATE]       = "Pan ID update",
+    [ESP_ZB_NWK_COMMAND_STATUS_NETWORK_ADDRESS_UPDATE]      = "Network address update",
+    [ESP_ZB_NWK_COMMAND_STATUS_BAD_FRAME_COUNTER]           = "Bad frame counter",
+    [ESP_ZB_NWK_COMMAND_STATUS_BAD_KEY_SEQUENCE_NUMBER]     = "Bad key sequence number", 
+    [ESP_ZB_NWK_COMMAND_STATUS_UNKNOWN_COMMAND]             = "Command received is not known",
+};
 typedef struct esp_zb_network_traffic_raport_s {
     uint16_t short_addr;      //Short address of the reporting device
     bool is_active;
@@ -141,3 +161,18 @@ typedef struct topology_report_s {
     int16_t routes_count;
     route_info_t routes[10];
 } topology_report_t;
+
+//------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+//tablica rozmiarów nagłówków w zależności od trybu adresowania(niedopracowana)
+static const uint8_t aps_address_modes_size[] = {
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]   = 0,
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]   = 2,
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]             = 37,
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]             = 49,
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = 8,
+};

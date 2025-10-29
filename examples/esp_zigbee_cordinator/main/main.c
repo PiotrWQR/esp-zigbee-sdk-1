@@ -9,7 +9,7 @@
 #include "Helpers.h"
 #include "aps/esp_zigbee_aps.h"
 #include "uart_interface.h"
-
+#include "test/esp_zigbee_test_utils.h"
 
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
@@ -105,7 +105,8 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
         break;
     case ESP_ZB_NLME_STATUS_INDICATION:
         nwk_status_params = (esp_zb_zdo_signal_nwk_status_indication_params_t *)esp_zb_app_signal_get_params(p_sg_p);
-        ESP_LOGI(TAG, "Network status with status: %s, network addr: 0x%04hx, status: %d", esp_err_to_name(err_status), nwk_status_params->network_addr, nwk_status_params->status);
+
+        ESP_LOGI(TAG, "Network status with status: %s, network addr: 0x%04hx, status: %s", esp_err_to_name(err_status), nwk_status_params->network_addr, nwk_ind_name[nwk_status_params->status]);
         if (nwk_status_params->status == ESP_ZB_NWK_COMMAND_STATUS_ADDRESS_CONFLICT) {
             ESP_LOGE(TAG, "PAN ID conflict detected, restarting network formation");
             esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_FORMATION, 1000);
@@ -190,7 +191,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_set_channel_mask(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
-    
+    ESP_ERROR_CHECK(esp_zb_nwk_start_concentrator_mode(5, 10));
     esp_zb_secur_network_min_join_lqi_set(ESP_ZB_MIN_JOIN_LQI);
     ESP_ERROR_CHECK(esp_zb_aps_set_fragment_interframe_delay(2));
     esp_zb_set_rx_on_when_idle(true);
