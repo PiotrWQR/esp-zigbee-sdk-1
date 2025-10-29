@@ -63,7 +63,7 @@ typedef enum {
 /**
  * @brief The Zigbee trace configuration.
  *
- * @param[in] trace_level set trace level refer to esp_zb_trace_level_cfg_t
+ * @param[in] _level set trace level refer to esp_zb_trace_level_cfg_t
  * @param[in] trace_mask Set trace mask
  *
  */

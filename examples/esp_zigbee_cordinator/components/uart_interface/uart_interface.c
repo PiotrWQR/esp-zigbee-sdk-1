@@ -236,6 +236,7 @@ char* create_json_transmision_ended(){
 
     char *json_string = cJSON_PrintUnformatted(root);
     printf(json_string);
+    printf('\n')
     cJSON_Delete(root);
 
     return json_string;

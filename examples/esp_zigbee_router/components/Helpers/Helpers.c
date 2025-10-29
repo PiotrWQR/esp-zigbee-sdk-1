@@ -60,8 +60,9 @@ void send_topology_report(){
         .radius = 5
     };
     ESP_LOGI(TAG_include, "Sending topology report to coordinator");
-    pre_lock:
-    ESP_GOTO_ON_FALSE(esp_zb_lock_acquire(portMAX_DELAY), 32, pre_lock, TAG_include, "Failed to acquire lock before sending topology report");
+    //pre_lock:
+    //ESP_GOTO_ON_FALSE(esp_zb_lock_acquire(portMAX_DELAY), 32, pre_lock, TAG_include, "Failed to acquire lock before sending topology report");
+    esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
     
@@ -304,14 +305,14 @@ void beacon_task(void *pvParameters)
         data.end_time = pdTICKS_TO_MS(xTaskGetTickCount());
         passed_time = data.end_time - data.start_time;
         data.failed_ping_count = failed_ping_count;
+        failed_ping_count = 0;
+        bytes= PAYLOAD_SIZE * successful_ping_count;
         data.successful_ping_count = successful_ping_count;
+        successful_ping_count = 0;
         data.recon_time = recon_time;
         data.repeats = REPEATS;
         data.delay = DELAY_MS;
         data.size = PAYLOAD_SIZE;
-        bytes= PAYLOAD_SIZE * successful_ping_count;
-        failed_ping_count = 0;
-        successful_ping_count = 0;
         
         ESP_LOGI(TAG, "Start time: %ld, End time: %ld, Passed time: %ld", data.start_time, data.end_time, passed_time);
         ESP_LOGI(TAG, "Bytes : %ld, payload size: %d", bytes, PAYLOAD_SIZE);
