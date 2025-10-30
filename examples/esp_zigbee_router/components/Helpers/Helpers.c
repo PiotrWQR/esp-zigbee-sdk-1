@@ -91,20 +91,13 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     if (ind.status == 0x00) {
         if(ind.dst_endpoint == 30 && ind.profile_id == ESP_ZB_AF_HA_PROFILE_ID && ind.cluster_id == ESP_ZB_ZCL_CLUSTER_ID_BASIC) {
             setting_change_t *setting_change = (setting_change_t *)ind.asdu;
-            ESP_LOGI("APSDE INDICATION", "Received settings change: REPEATS=%d, DEST_ADDR=0x%04hx, DELAY_MS=%ld, DELAY_TICK=%ld",
-                     setting_change->new_repeats, setting_change->new_dest_addr, setting_change->new_delay_ms, setting_change->new_delay_tick);
-            ESP_LOGI("APSDE_INDICATION", "Received mac config: CSMA_MIN_BE=%d, CSMA_MAX_BE=%d, CSMA_MAX_BACKOFFS=%d",
-                     setting_change->csma_min_be, setting_change->csma_max_be, setting_change->csma_max_backoffs);
-            REPEATS = setting_change->new_repeats;
+            ESP_LOGI("APSDE INDICATION", "Received settings change: DEST_ADDR=0x%04hx, DELAY_MS=%ld , TX_POWER=%d, PAYLOAD_SIZE=%d", 
+                     setting_change->new_dest_addr, setting_change->new_delay_ms, setting_change->tx_power, setting_change->payload_size);
             DELAY_MS = setting_change->new_delay_ms;
             DEST_ADDR = setting_change->new_dest_addr;
-            DELAY_TICK = setting_change->new_delay_tick;
             PAYLOAD_SIZE = setting_change->payload_size;
-            esp_zb_platform_mac_config_t mac_config;
-                mac_config.csma_min_be = setting_change->csma_min_be;
-                mac_config.csma_max_be = setting_change->csma_max_be;
-                mac_config.csma_max_backoffs = setting_change->csma_max_backoffs;
-            ESP_ERROR_CHECK(esp_zb_platform_mac_config_set(&mac_config));
+            esp_zb_set_tx_power(setting_change->tx_power);
+
             return true;
         }
         if(ind.dst_endpoint == 32){
@@ -128,7 +121,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     return processed;
 }
 //wyświetla sąsiadów
-static void esp_show_neighbor_table()
+void esp_show_neighbor_table()
 {
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_neighbor_info_t neighbor = {};
@@ -263,62 +256,17 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
     free(req.asdu); // Free the allocated memory for ASDU
 }
 
-void send_information_to_coordinator(data_to_send_t *data){ 
-    esp_zb_apsde_data_req_t req = {
-        .dst_addr.addr_short = 0x0000, //Coordinator address
-        .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
-        .dst_endpoint = 20,
-        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,
-        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,
-        .src_endpoint = 10,
-        .asdu_length = sizeof(data_to_send_t),
-        .tx_options = ESP_ZB_APSDE_TX_OPT_FRAG_PERMITTED | ESP_ZB_APSDE_TX_OPT_ACK_TX,
-        .use_alias = false,
-        .alias_src_addr = 0,
-        .alias_seq_num = 0,
-        .radius = 3,
-    };
-    req.asdu = malloc(req.asdu_length * sizeof(uint8_t));
-    memcpy(req.asdu, data, sizeof(data_to_send_t));
-    // ESP_LOGI(TAG, "Sending data to coordinator, start time: %ld, end time: %ld, asdu length: %ld", ((data_to_send_t *)req.asdu)->start_time, ((data_to_send_t *)req.asdu)->end_time, req.asdu_length);
-    esp_zb_lock_acquire(portMAX_DELAY);
-    ESP_ERROR_CHECK(esp_zb_aps_data_request(&req));
-    esp_zb_lock_release();
-}
+
 //dziala jako zadanie FreeRTOS - wysyła pingi do koordynatora po wznowieniu zadania
 void beacon_task(void *pvParameters)
 {
     const char *TAG = "BEACON_TASK";
-    uint32_t bytes = 0;
+    uint32_t i = 0;
     data_to_send_t data;
     beacon_task_handle  = xTaskGetCurrentTaskHandle();
     
     while (1) {
-        vTaskSuspend(beacon_task_handle);
-        ESP_LOGI(TAG, "Beacon task resumed");
-        uint32_t passed_time = 0;
-        data.start_time = pdTICKS_TO_MS(xTaskGetTickCount());
-        esp_zb_get_long_address(data.addr);
-        for(int i=0; i < REPEATS; i++){
-            create_ping_seq(DEST_ADDR, i);
-            vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); // Wait for 0 milliseconds
-        }
-        data.end_time = pdTICKS_TO_MS(xTaskGetTickCount());
-        passed_time = data.end_time - data.start_time;
-        data.failed_ping_count = failed_ping_count;
-        failed_ping_count = 0;
-        bytes= PAYLOAD_SIZE * successful_ping_count;
-        data.successful_ping_count = successful_ping_count;
-        successful_ping_count = 0;
-        data.recon_time = recon_time;
-        data.repeats = REPEATS;
-        data.delay = DELAY_MS;
-        data.size = PAYLOAD_SIZE;
-        
-        ESP_LOGI(TAG, "Start time: %ld, End time: %ld, Passed time: %ld", data.start_time, data.end_time, passed_time);
-        ESP_LOGI(TAG, "Bytes : %ld, payload size: %d", bytes, PAYLOAD_SIZE);
-        vTaskDelay(pdMS_TO_TICKS(2000)); // Wait before sending the report
-        send_information_to_coordinator(&data);
-        bytes = 0;
+        create_ping_seq(DEST_ADDR, i++);
+        vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
     }
 }

@@ -83,13 +83,8 @@ typedef struct ping_payload_s {
 } ping_payload_t;
 
 typedef struct {
-    uint16_t new_repeats;
     uint16_t new_dest_addr;
-    uint32_t new_delay_ms;
-    uint32_t new_delay_tick;
-    uint8_t csma_min_be;        /*!< The minimum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
-    uint8_t csma_max_be;        /*!< The maximum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
-    uint8_t csma_max_backoffs;
+    uint32_t new_delay_ms;      // przerwa miedzy żądaniami dla wysyłania sekwancji pingow przez urządzenie końcowe
     uint16_t payload_size;
     int8_t tx_power;
 } setting_change_t;

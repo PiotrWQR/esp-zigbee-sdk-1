@@ -75,19 +75,8 @@ static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 //Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
-void send_settings(uint16_t short_addr){
-    esp_zb_platform_mac_config_t mac_config = {0};
-    esp_zb_platform_mac_config_get(&mac_config);
-    setting_change_t settings = {
-        .new_repeats = repeats,
-        .new_dest_addr = dest_addr,
-        .new_delay_ms = delay_ms,
-        .new_delay_tick = 50,
-        .csma_min_be = mac_config.csma_min_be,
-        .csma_max_be = mac_config.csma_max_be,
-        .csma_max_backoffs = mac_config.csma_max_backoffs,
-        .payload = payload_size
-    };
+void send_settings(uint16_t short_addr, setting_change_t settings) {
+
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
         .dst_addr.addr_short = short_addr,
@@ -103,7 +92,8 @@ void send_settings(uint16_t short_addr){
         .alias_seq_num = 0,
         .radius = 4
     };
-    ESP_LOGI(TAG_include, "Sending settings to 0x%04hx: repeats=%d, dest_addr=0x%04hx, delay_ms=%ld, payload_size=%d", short_addr, settings.new_repeats, settings.new_dest_addr, settings.new_delay_ms, settings.payload);
+    ESP_LOGI(TAG_include, "Sending settings to 0x%04hx:  dest_addr=0x%04hx, delay_ms=%ld, payload_size=%d, tx_power=%d",
+        short_addr, settings.new_dest_addr, settings.new_delay_ms, settings.payload_size, settings.tx_power);
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
@@ -409,23 +399,6 @@ void energy_detect_callback(esp_zb_zdp_status_t status, uint16_t count, esp_zb_e
     }
 }
 
-void update_notify_callback(const esp_zb_zdo_mgmt_update_notify_t *notify, void *user_ctx)
-{
-    const char *TAG = "ZDO MGMT NWK UPDATE NOTIFY CALLBACK";
-    if (notify->status == ESP_ZB_ZDP_STATUS_SUCCESS) {
-        ESP_LOGI(TAG, "Network Update Notify received successfully");
-        for(uint8_t i = 0; i < 26; i++) {
-            if(notify->scanned_channels & (1 << i)) {
-                ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
-            }
-        }
-        ESP_LOGI(TAG, "Total Transmissions: %d", notify->total_transmission);
-        ESP_LOGI(TAG, "Transmission Failures: %d", notify->transmission_failures);
-
-    } else {
-        ESP_LOGE(TAG, "Network Update Notify failed with status: 0x%02x", notify->status);
-    }
-}
 
 uint16_t get_neighbor_addr()
 {
@@ -489,11 +462,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
         };
         //esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
 
-        esp_zb_zdo_mgmt_nwk_update_req_param_t update_req = {
-            .scan_channels = 0x07FFF800, // Example channel mask
-            .scan_duration = 3              // Example scan duration
-        };
-        esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, NULL);
+        
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
         //send_indicator_toall();
         //display_traffic_report();

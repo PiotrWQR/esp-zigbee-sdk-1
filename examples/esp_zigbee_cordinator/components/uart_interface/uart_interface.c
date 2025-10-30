@@ -10,7 +10,8 @@
 #include "esp_zigbee_core.h"
 #include "Helpers.h"
 
-// static const char *TAG = "uart_interface";
+
+
 
 //Function prototypes
 char* create_json_tables();
@@ -23,7 +24,6 @@ static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1524*2;
 static QueueHandle_t uart_queue;
-static cJSON *topology_json = NULL;
 //static QueueHandle_t uart_tx_queue;
 
 
@@ -47,7 +47,6 @@ void uart_interface_init(void)
     ESP_LOGI("uart_interface", "UART initialized");
 }
 
-
 int sendData(const char* logName, const char* data)
 {
     const int len = strlen(data);
@@ -62,7 +61,6 @@ int sendData(const char* logName, const char* data)
     ESP_LOGI(logName, "Wrote %d bytes", txBytes);
     return txBytes;
 }
-
 
 void rx_task(void *arg)
 {
@@ -106,6 +104,7 @@ void rx_task(void *arg)
     }
     free(data);
 }
+
 
 char* create_json_tables()
 {
@@ -256,6 +255,33 @@ char* create_json_transmision_ended(){
     return json_string;
 }
 
+void update_notify_callback(const esp_zb_zdo_mgmt_update_notify_t *notify, void *user_ctx)
+{
+    cJSON *notify_json = (cJSON *)user_ctx;
+    const char *TAG = "ZDO MGMT NWK UPDATE NOTIFY CALLBACK";
+    if (notify->status == ESP_ZB_ZDP_STATUS_SUCCESS) {
+        notify_json = cJSON_CreateObject();
+        cJSON *arr = cJSON_CreateArray();
+        cJSON_AddItemToObject(notify_json, "energy_values", arr);
+        ESP_LOGI(TAG, "Network Update Notify received successfully");
+        for(uint8_t i = 0; i < 26; i++) {
+            if(notify->scanned_channels & (1 << i)) {
+                cJSON * channel_item = cJSON_CreateObject();
+                // ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
+                cJSON_AddItemToObject(channel_item, "energy_value", cJSON_CreateNumber(notify->energy_values[i]));
+                cJSON_AddItemToObject(channel_item, "channel", cJSON_CreateNumber(i));
+                cJSON_AddItemToArray(arr, channel_item);
+            }
+        }
+        // ESP_LOGI(TAG, "Total Transmissions: %d", notify->total_transmission);
+        // ESP_LOGI(TAG, "Transmission Failures: %d", notify->transmission_failures);
+        cJSON_AddNumberToObject(notify_json, "total_transmission", notify->total_transmission);
+        cJSON_AddNumberToObject(notify_json, "transmission_failures", notify->transmission_failures);
+    } else {
+        ESP_LOGE(TAG, "Network Update Notify failed with status: 0x%02x", notify->status);
+    }
+}
+
 char * create_json_nwk(){
     cJSON *root = cJSON_CreateObject();
     char* json_string = NULL;
@@ -269,6 +295,21 @@ char * create_json_nwk(){
     cJSON_AddStringToObject(root, "extended_pan_id", ieee_addr_to_string(extended_pan_id));
     cJSON_AddStringToObject(root, "pan_id", short_addr_to_string(esp_zb_get_pan_id()));
     cJSON_AddNumberToObject(root, "channel", esp_zb_get_current_channel());
+
+    const esp_zb_zdo_mgmt_nwk_update_req_param_t update_req = {
+            .scan_channels = 0x07FFF800, // Example channel mask
+            .scan_duration = 2              // Example scan duration
+        };
+
+    cJSON *json_notify = NULL;
+    esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, (void *)json_notify);
+    if (json_notify != NULL) {
+        cJSON_AddItemToObject(root, "nwk_update_notify", json_notify);
+    } else {
+        cJSON_AddStringToObject(root, "nwk_update_notify", "No data available");
+    }
+
+
     json_string = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
     return json_string;
@@ -282,36 +323,44 @@ void execute_host_request(cJSON *json){
     switch (request_type){
     case request_type_set_sending_settings:
         {
-            if(cJSON_HasObjectItem(json, "repeats") ){
-                change_repeats(cJSON_GetObjectItem(json, "repeats")->valueint);
-            }
-            if(cJSON_HasObjectItem(json, "dest_addr")){
-                change_dest_addr(cJSON_GetObjectItem(json, "dest_addr")->valueint);
-            }
-            if(cJSON_HasObjectItem(json, "delay_ms") ){
-                uint16_t delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
-                change_delay(delay_ms);
-                ESP_LOGI(TAG, "Delay set to %ld ms", get_delay_ms());
-            }
-            if(cJSON_HasObjectItem(json, "payload_size")){
-                uint16_t payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
-                if(payload_size > 1600){
-                    payload_size = 1600;
-                    ESP_LOGI(TAG, "Payload size too large, set to max 1600");  
+            if(cJSON_HasObjectItem(json, "device_addr")){
+                uint16_t device_addr = cJSON_GetObjectItem(json, "device_addr")->valueint;
+                esp_zb_set_tx_power(0); //Reset tx power to default before sending new settings
+                setting_change_t settings = {0};
+                settings.new_dest_addr = get_dest_addr();
+                settings.new_delay_ms = get_delay_ms();
+                
+                if(cJSON_HasObjectItem(json, "dest_addr")){
+                    settings.new_dest_addr = cJSON_GetObjectItem(json, "dest_addr")->valueint;
                 }
-                change_payload_size(payload_size);
-                ESP_LOGI(TAG, "Payload size set to %d", get_payload_size());
+                if(cJSON_HasObjectItem(json, "delay_ms") ){
+                    uint16_t delay_ms = cJSON_GetObjectItem(json, "delay_ms")->valueint;
+                    settings.new_delay_ms = delay_ms;
+                    ESP_LOGI(TAG, "Delay set to %ld ms", get_delay_ms());
+                }
+                if(cJSON_HasObjectItem(json, "payload_size")){
+                    uint16_t payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
+                    if(payload_size > 1600){
+                        payload_size = 1600;
+                        ESP_LOGI(TAG, "Payload size too large, set to max 1600");  
+                    }
+                    change_payload_size(payload_size);
+                    ESP_LOGI(TAG, "Payload size set to %d", get_payload_size());
+                }
+                if(cJSON_HasObjectItem(json, "tx_power"))
+                {
+                    int8_t tx_power = cJSON_GetObjectItem(json, "tx_power")->valueint;
+                    esp_zb_set_tx_power(tx_power);
+                }
+                send_settings(device_addr, settings); //Send settings to specific device
+                return;
             }
-            if(cJSON_HasObjectItem(json, "tx_power"))
-            {
-                int8_t tx_power = cJSON_GetObjectItem(json, "tx_power")->valueint;
-                esp_zb_set_tx_power(tx_power);
-            }
-            send_settings(0xffff);
-        } //Send settings to all devices
+
+        } 
         break;
     case request_type_set_cca:
         {
+            ESP_LOGE(TAG, "Deprecated: CCA settings change requested");
             esp_zb_platform_mac_config_t mac_config = {0};
             int8_t changed = 0;
             if(cJSON_HasObjectItem(json, "csma_min_be")){
@@ -328,8 +377,13 @@ void execute_host_request(cJSON *json){
             }
 
             esp_zb_platform_mac_config_set(&mac_config);
-            if(changed) {
-                send_settings(0xffff); //Send settings to all devices
+            if(changed){
+                ESP_LOGI(TAG, "MAC config updated");
+                char* json_string = create_json_cca();
+                if(json_string != NULL){
+                    sendData(TAG, json_string);
+                    free(json_string);
+                }
             }
             else{
                 ESP_LOGI(TAG, "Failed to set MAC config");
