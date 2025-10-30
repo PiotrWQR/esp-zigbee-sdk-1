@@ -7,7 +7,7 @@ void uart_interface_init(void);
 void rx_task(void *arg);
 char* create_json_error(char *error_description);
 void send_all_data_to_host(const char TAG[]);
-
+void send_ping_data(uint16_t addr, uint32_t ping_num, uint32_t seq_num);
 
 enum json_information_type_e {
     json_info_type_none = 0,
@@ -17,7 +17,8 @@ enum json_information_type_e {
     json_info_tables = 4,
     json_info_nwk_data = 5,
     json_info_trasmision_ended = 6,
-    json_info_energy_scan =7,
+    json_info_energy_scan = 7,
+    json_info_recived_signal = 8,
     json_info_error = 255,
 };
 

@@ -10,22 +10,15 @@
 #include "esp_zigbee_core.h"
 #include "Helpers.h"
 
-
-
-
 //Function prototypes
 char* create_json_tables();
 char* create_json_cca();
 char* create_json_sending_settings();
 void execute_host_request(cJSON *json);
-
 // Setup UART buffered IO with event queue
 static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
 static const int TX_BUF_SIZE = 1824*2;
-static QueueHandle_t uart_queue;
-//static QueueHandle_t uart_tx_queue;
-
 
 
 void uart_interface_init(void)
@@ -41,7 +34,7 @@ void uart_interface_init(void)
     };
 
     ESP_LOGI("uart_interface", "UART init with TXD pin: %d, RXD pin: %d, baud rate: %d", TXD_PIN, RXD_PIN, uart_config.baud_rate);
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE , TX_BUF_SIZE * 2, 10, &uart_queue, 0));
+    ESP_ERROR_CHECK(uart_driver_install(uart_num, RX_BUF_SIZE , TX_BUF_SIZE * 2, 10, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
     uart_set_pin(uart_num, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     ESP_LOGI("uart_interface", "UART initialized");
@@ -524,9 +517,30 @@ void send_all_data_to_host(const char TAG[]){
         .scan_count = 2,
         .dst_addr = 0x0000
     };
-    
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, NULL);
     esp_zb_lock_release();
+}
 
+void send_ping_data(uint16_t addr, uint32_t ping_num, uint32_t seq_num){
+    cJSON *obj = cJSON_CreateObject();
+    cJSON_AddItemToObject(obj, "seq_num", cJSON_CreateNumber(seq_num));
+    cJSON_AddItemToObject(obj, "ping_num", cJSON_CreateNumber(ping_num));
+    cJSON_AddItemToObject(obj, "addr", cJSON_CreateNumber(addr));
+    esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_route_record_info_t route_record = {};
+    cJSON * path = cJSON_AddArrayToObject(obj, "path");
+    while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route_record))
+    {
+        if(route_record.dest_address == addr){
+            for(uint8_t i=0; i<route_record.relay_count; i++){
+                cJSON_AddItemToArray(path, cJSON_CreateNumber(route_record.path[i]));
+            }
+        }
+    }
+    cJSON_AddItemToObject(obj, "information_type", cJSON_CreateNumber(json_info_recived_signal));
+    char * json_str = cJSON_PrintUnformatted(obj);
+    sendData("Data", json_str);
+    free(json_str);
+    cJSON_Delete(obj);
 }
