@@ -17,6 +17,7 @@ enum json_information_type_e {
     json_info_tables = 4,
     json_info_nwk_data = 5,
     json_info_trasmision_ended = 6,
+    json_info_energy_scan =7,
     json_info_error = 255,
 };
 

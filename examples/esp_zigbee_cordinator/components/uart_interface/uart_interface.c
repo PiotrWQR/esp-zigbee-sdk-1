@@ -22,7 +22,7 @@ void execute_host_request(cJSON *json);
 // Setup UART buffered IO with event queue
 static const int  uart_num = UART_NUM_1;
 static const int RX_BUF_SIZE = 512;
-static const int TX_BUF_SIZE = 1524*2;
+static const int TX_BUF_SIZE = 1824*2;
 static QueueHandle_t uart_queue;
 //static QueueHandle_t uart_tx_queue;
 
@@ -59,6 +59,7 @@ int sendData(const char* logName, const char* data)
     sprintf(data_with_newline + len, "\n"); // Append newline character
     int txBytes = uart_write_bytes(uart_num, data_with_newline, len + 1);
     ESP_LOGI(logName, "Wrote %d bytes", txBytes);
+    free(data_with_newline);
     return txBytes;
 }
 
@@ -257,17 +258,17 @@ char* create_json_transmision_ended(){
 
 void update_notify_callback(const esp_zb_zdo_mgmt_update_notify_t *notify, void *user_ctx)
 {
-    cJSON *notify_json = (cJSON *)user_ctx;
     const char *TAG = "ZDO MGMT NWK UPDATE NOTIFY CALLBACK";
+    ESP_LOGI(TAG, "Notify callback started");
+    cJSON * notify_json = cJSON_CreateObject();
     if (notify->status == ESP_ZB_ZDP_STATUS_SUCCESS) {
-        notify_json = cJSON_CreateObject();
         cJSON *arr = cJSON_CreateArray();
         cJSON_AddItemToObject(notify_json, "energy_values", arr);
         ESP_LOGI(TAG, "Network Update Notify received successfully");
-        for(uint8_t i = 0; i < 26; i++) {
+        for(uint8_t i = 0; i <= 26; i++) {
             if(notify->scanned_channels & (1 << i)) {
                 cJSON * channel_item = cJSON_CreateObject();
-                // ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
+                ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
                 cJSON_AddItemToObject(channel_item, "energy_value", cJSON_CreateNumber(notify->energy_values[i]));
                 cJSON_AddItemToObject(channel_item, "channel", cJSON_CreateNumber(i));
                 cJSON_AddItemToArray(arr, channel_item);
@@ -278,8 +279,15 @@ void update_notify_callback(const esp_zb_zdo_mgmt_update_notify_t *notify, void 
         cJSON_AddNumberToObject(notify_json, "total_transmission", notify->total_transmission);
         cJSON_AddNumberToObject(notify_json, "transmission_failures", notify->transmission_failures);
     } else {
+        cJSON_AddNumberToObject(notify_json, "status", notify->status);
         ESP_LOGE(TAG, "Network Update Notify failed with status: 0x%02x", notify->status);
     }
+    cJSON_AddNumberToObject(notify_json, "information_type", json_info_energy_scan);
+    char * result = cJSON_PrintUnformatted(notify_json);
+    cJSON_Delete(notify_json);
+    sendData(TAG, result);
+    free(result);
+    
 }
 
 char * create_json_nwk(){
@@ -296,18 +304,6 @@ char * create_json_nwk(){
     cJSON_AddStringToObject(root, "pan_id", short_addr_to_string(esp_zb_get_pan_id()));
     cJSON_AddNumberToObject(root, "channel", esp_zb_get_current_channel());
 
-    const esp_zb_zdo_mgmt_nwk_update_req_param_t update_req = {
-            .scan_channels = 0x07FFF800, // Example channel mask
-            .scan_duration = 2              // Example scan duration
-        };
-
-    cJSON *json_notify = NULL;
-    esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, (void *)json_notify);
-    if (json_notify != NULL) {
-        cJSON_AddItemToObject(root, "nwk_update_notify", json_notify);
-    } else {
-        cJSON_AddStringToObject(root, "nwk_update_notify", "No data available");
-    }
 
 
     json_string = cJSON_PrintUnformatted(root);
@@ -318,7 +314,7 @@ char * create_json_nwk(){
 void execute_host_request(cJSON *json){
     //TODO mutex for settings change
     uint8_t request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
-    const char TAG[] = "request_handler";
+    const char TAG[] = "REQUEST HANDLER";
     
     switch (request_type){
     case request_type_set_sending_settings:
@@ -339,20 +335,19 @@ void execute_host_request(cJSON *json){
                     ESP_LOGI(TAG, "Delay set to %ld ms", get_delay_ms());
                 }
                 if(cJSON_HasObjectItem(json, "payload_size")){
-                    uint16_t payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
-                    if(payload_size > 1600){
-                        payload_size = 1600;
+                    settings.payload_size = cJSON_GetObjectItem(json, "payload_size")->valueint;
+                    if(settings.payload_size > 1600){
+                        settings.payload_size = 1600;
                         ESP_LOGI(TAG, "Payload size too large, set to max 1600");  
                     }
-                    change_payload_size(payload_size);
-                    ESP_LOGI(TAG, "Payload size set to %d", get_payload_size());
                 }
                 if(cJSON_HasObjectItem(json, "tx_power"))
                 {
                     int8_t tx_power = cJSON_GetObjectItem(json, "tx_power")->valueint;
-                    esp_zb_set_tx_power(tx_power);
+                    settings.tx_power = tx_power;
                 }
                 send_settings(device_addr, settings); //Send settings to specific device
+                cJSON_Delete(json);
                 return;
             }
 
@@ -492,7 +487,6 @@ void execute_host_request(cJSON *json){
 
 }
 
-
 void send_all_data_to_host(const char TAG[]){
     char* json_string = create_json_cca();
     if(json_string != NULL){
@@ -524,4 +518,15 @@ void send_all_data_to_host(const char TAG[]){
         sendData(TAG, json_string);
         free(json_string);
     }
+    const esp_zb_zdo_mgmt_nwk_update_req_param_t update_req = {
+        .scan_channels = 0x07FFF800, // Example channel mask
+        .scan_duration = 1,             // Example scan duration
+        .scan_count = 2,
+        .dst_addr = 0x0000
+    };
+    
+    esp_zb_lock_acquire(portMAX_DELAY);
+    esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, NULL);
+    esp_zb_lock_release();
+
 }
