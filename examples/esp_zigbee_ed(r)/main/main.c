@@ -13,7 +13,7 @@
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
 #endif
 
-static const char *TAG= "ESP_ZB_ROUTER";
+static const char *TAG= "ESP_ZB_END_DEVICE";
 
 static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
 {
@@ -183,7 +183,7 @@ static esp_err_t zb_register_device(void){
 
 static void esp_zb_task(void *pcParameters)
 {
-    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(180));
+    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(150));
     ESP_ERROR_CHECK(esp_zb_scheduler_queue_size_set(100));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
@@ -224,5 +224,5 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 3*4096, NULL, 6, NULL);
-    //xTaskCreate(beacon_task, "Zigbee_beacon", (10*1024), NULL, 3, NULL);
+    xTaskCreate(beacon_task, "Zigbee_beacon", (10*1024), NULL, 3, NULL);
 }

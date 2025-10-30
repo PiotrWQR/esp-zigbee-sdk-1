@@ -80,7 +80,6 @@ void rx_task(void *arg)
                 }
                 request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
                 execute_host_request(json);
-
                 cJSON_Delete(json);
             } else {
                 ESP_LOGW(RX_TASK_TAG, "Received invalid JSON");
@@ -513,9 +512,7 @@ void send_all_data_to_host(const char TAG[]){
     }
     const esp_zb_zdo_mgmt_nwk_update_req_param_t update_req = {
         .scan_channels = 0x07FFF800, // Example channel mask
-        .scan_duration = 1,             // Example scan duration
-        .scan_count = 2,
-        .dst_addr = 0x0000
+        .scan_duration = 3,             // Example scan duration
     };
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_zdo_mgmt_nwk_update_req(&update_req, update_notify_callback, NULL);
