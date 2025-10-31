@@ -156,7 +156,7 @@ typedef struct topology_report_s {
     route_info_t routes[10];
 } topology_report_t;
 
-void send_settings(uint16_t short_addr, setting_change_t settings);
+void send_settings(uint16_t short_addr, setting_change_t *settings);
 
 
 //------------------------------------------------------------------------------------------------------------------------

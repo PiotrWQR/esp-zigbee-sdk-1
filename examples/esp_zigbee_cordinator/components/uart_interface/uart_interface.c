@@ -59,28 +59,31 @@ int sendData(const char* logName, const char* data)
 void rx_task(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK";
-
     uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE + 1);
     while (1) {
         int rxBytes = uart_read_bytes(uart_num, data, RX_BUF_SIZE, 50 / portTICK_PERIOD_MS);
         int request_type ;
         if (rxBytes > 0) {
             data[rxBytes] = 0;
+            ESP_LOGI(RX_TASK_TAG, "Request string: %s", (char *)data);
             cJSON *json = cJSON_Parse((char *)data);
             if(json != NULL){
-                if(!cJSON_HasObjectItem(json, "request_type")){
+                if(cJSON_HasObjectItem(json, "request_type")){
+                    request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
+                    execute_host_request(json);
+                    cJSON_Delete(json);
+                    continue;
+                    
+                }else{
                     ESP_LOGW(RX_TASK_TAG, "No request_type in JSON");
                     char* json_string = create_json_error("No request_type in JSON");
                     if(json_string != NULL){
                         sendData(RX_TASK_TAG, json_string);
-                        free(json_string);
                         cJSON_Delete(json);
+                        free(json_string);
                         continue;
                     }
                 }
-                request_type = cJSON_GetObjectItem(json, "request_type")->valueint;
-                execute_host_request(json);
-                cJSON_Delete(json);
             } else {
                 ESP_LOGW(RX_TASK_TAG, "Received invalid JSON");
                 char* json_string = create_json_error("Json is not valid");
@@ -90,8 +93,6 @@ void rx_task(void *arg)
                     continue;
                 }
             }
-
-            ESP_LOGI(RX_TASK_TAG, "Read %d bytes: %s", rxBytes, data);
             ESP_LOGI(RX_TASK_TAG, "Request type: %d", request_type);
         }
     }
@@ -338,11 +339,9 @@ void execute_host_request(cJSON *json){
                     int8_t tx_power = cJSON_GetObjectItem(json, "tx_power")->valueint;
                     settings.tx_power = tx_power;
                 }
-                send_settings(device_addr, settings); //Send settings to specific device
-                cJSON_Delete(json);
-                return;
+                send_settings(device_addr, &settings); //Send settings to specific device
+                ESP_LOGI(TAG, "Tu działa");
             }
-
         } 
         break;
     case request_type_set_cca:

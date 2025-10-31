@@ -65,7 +65,7 @@ static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 //Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
-void send_settings(uint16_t short_addr, setting_change_t settings) {
+void send_settings(uint16_t short_addr, setting_change_t * settings) {
 
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
@@ -75,7 +75,7 @@ void send_settings(uint16_t short_addr, setting_change_t settings) {
         .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,
         .src_endpoint = 30,
         .asdu_length = sizeof(setting_change_t),
-        .asdu = (uint8_t *)&settings,
+        .asdu = (uint8_t *)settings,
         .tx_options = 0,
         .use_alias = false,
         .alias_src_addr = 0,
@@ -83,7 +83,7 @@ void send_settings(uint16_t short_addr, setting_change_t settings) {
         .radius = 4
     };
     ESP_LOGI(TAG_include, "Sending settings to 0x%04hx:  dest_addr=0x%04hx, delay_ms=%ld, payload_size=%d, tx_power=%d",
-        short_addr, settings.new_dest_addr, settings.new_delay_ms, settings.payload_size, settings.tx_power);
+        short_addr, settings->new_dest_addr, settings->new_delay_ms, settings->payload_size, settings->tx_power);
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
