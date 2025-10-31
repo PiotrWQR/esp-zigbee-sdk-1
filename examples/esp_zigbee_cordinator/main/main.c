@@ -220,9 +220,9 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     helpers_init();
     ESP_LOGI(TAG, "Starting Zigbee Coordinator example");
-    xTaskCreate(esp_zb_task, "Zigbee_main", 9*1024, NULL, configMAX_PRIORITIES-3, NULL);
+    xTaskCreate(esp_zb_task, "Zigbee_main", 10*1024, NULL, configMAX_PRIORITIES-3, NULL);
     ESP_LOGI(TAG, "Starting UART interface");
     uart_interface_init();
     ESP_LOGI(TAG, "Starting UART RX task");
-    xTaskCreate(rx_task, "uart_rx_task", 4*1024, NULL, configMAX_PRIORITIES-2, NULL);
+    xTaskCreate(rx_task, "uart_rx_task", 5*1024, NULL, configMAX_PRIORITIES-2, NULL);
 }

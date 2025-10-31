@@ -183,30 +183,28 @@ static esp_err_t zb_register_device(void){
 
 static void esp_zb_task(void *pcParameters)
 {
-    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(180));
+    ESP_ERROR_CHECK(esp_zb_io_buffer_size_set(200));
     ESP_ERROR_CHECK(esp_zb_scheduler_queue_size_set(100));
     esp_zb_cfg_t zb_nwk_cfg = ESP_ZB_ZR_CONFIG();
     esp_zb_init(&zb_nwk_cfg);
     //esp_zb_set_trace_level_mask(ESP_ZB_TRACE_LEVEL_INFO, ESP_ZB_TRACE_SUBSYSTEM_NWK);
     esp_zb_nvram_erase_at_start(true);
 
-    //esp_zb_zdo_touchlink_set_rssi_threshold(ESP_ZB_TOUCHLINK_RSSI_THRESHOLD);
     esp_zb_set_tx_power(20); /* dBm */
     esp_zb_core_action_handler_register(zb_action_handler);
     
     esp_zb_set_channel_mask(ESP_ZB_CHANNEL_MASK);
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
     esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
-    //esp_zb_set_secondary_network_channel_set(ESP_ZB_SECONDARY_CHANNEL_MASK);
+
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     ESP_ERROR_CHECK(zb_register_device());
     esp_zb_secur_link_key_exchange_required_set(true);
     esp_zb_secur_network_min_join_lqi_set(ESP_ZB_SECUR_MIN_LQI);
     esp_zb_set_rx_on_when_idle(true);
-        //esp_zb_set_trace_level_mask(ESP_ZB_TRACE_LEVEL_INFO,  ESP_ZB_TRACE_SUBSYSTEM_NWK | ESP_ZB_TRACE_SUBSYSTEM_ZDO );
-    ESP_ERROR_CHECK(esp_zb_aps_set_fragment_interframe_delay(0));
 
+    ESP_ERROR_CHECK(esp_zb_aps_set_fragment_interframe_delay(0));
 
     ESP_ERROR_CHECK(esp_zb_start(false));
     esp_zb_stack_main_loop();
@@ -224,5 +222,4 @@ void app_main(void)
 
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     xTaskCreate(esp_zb_task, "Zigbee_main", 3*4096, NULL, 6, NULL);
-    //xTaskCreate(beacon_task, "Zigbee_beacon", (10*1024), NULL, 3, NULL);
 }

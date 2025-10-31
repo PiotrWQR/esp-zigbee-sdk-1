@@ -4,7 +4,6 @@
 #include "esp_check.h"
 #include "esp_log.h"
 #include "zcl/esp_zigbee_zcl_common.h"
-#include "switch_driver.h"
 
 static const char *TAG_include = "esp_zigbee_include";
 void create_ping_seq(uint16_t dest_addr, uint32_t seq_num);
@@ -15,6 +14,8 @@ static uint16_t successful_ping_count = 0;
 static uint16_t failed_ping_count = 0;
 static uint32_t recon_time = 0;
 
+
+/* Obsługa APS*/
 //wysłanie wiadomości o trasach i sąsiedztwie do koordynatora
 void send_topology_report(){
     esp_err_t ret = ESP_OK;
@@ -120,6 +121,8 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
     }
     return processed;
 }
+
+/* Wyświetlanie tablics NWK*/
 //wyświetla sąsiadów
 void esp_show_neighbor_table()
 {
@@ -189,10 +192,8 @@ void esp_zigbee_include_show_tables(void)
     esp_show_record_route_table();
 }
 
-static switch_func_pair_t button_func_pair[] = {
-    {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
-};
 
+//Logika prztcisku
 void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
@@ -202,13 +203,24 @@ void button_handler(switch_func_pair_t *button_func_pair)
         esp_zb_bdb_open_network(30);
     }
 }
-
 bool deferred_driver_init(void)
 {
     uint8_t button_num = PAIR_SIZE(button_func_pair);
     bool is_initialized = switch_driver_init(button_func_pair, button_num, button_handler);
     return is_initialized;
 }
+
+
+
+
+
+
+
+
+
+
+
+//--------------------------------------------------------------------------------------------------------------
 
 void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
 {
@@ -255,7 +267,6 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
     esp_zb_lock_release();
     free(req.asdu); // Free the allocated memory for ASDU
 }
-
 
 //dziala jako zadanie FreeRTOS - wysyła pingi do koordynatora po wznowieniu zadania
 void beacon_task(void *pvParameters)

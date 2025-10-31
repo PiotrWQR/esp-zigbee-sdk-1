@@ -60,18 +60,7 @@ char* short_addr_to_string(uint16_t short_addr) {
     return str;
 }
 
-//ta funkcja ma wyśetlić ile bajtów zostało wysłanych, jednal istnieje problem z nie zawsze oczywistą wielkością nagłówka oraz stylu fragmentacji
-uint16_t request_size(esp_zb_apsde_data_req_t *req) 
-{
-    if (!req) {
-        return 0;
-    }
-    uint16_t size = aps_address_modes_size[req->dst_addr_mode];
 
-    size+= 19; // 19 is the size of the fixed fields in esp_zb_apsde_data_req_t
-    size += req->asdu_length;
-    return size;
-}
 static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };

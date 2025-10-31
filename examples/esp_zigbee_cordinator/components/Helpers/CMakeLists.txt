@@ -7,5 +7,4 @@ idf_component_register(
     REQUIRES "espressif__esp-zboss-lib" "espressif__esp-zigbee-lib" 
             "switch_driver" "json"
             "uart_interface"
-                    
 )

@@ -2,6 +2,7 @@
 #include "nwk/esp_zigbee_nwk.h"
 #include "aps/esp_zigbee_aps.h"
 #include "esp_zigbee_core.h"
+#include "switch_driver.h"
 
 static uint16_t PAYLOAD_SIZE = (1600);
 static uint16_t REPEATS = 100;
@@ -40,6 +41,9 @@ static const char *route_state_name[] = {
     [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
 };
 
+static switch_func_pair_t button_func_pair[] = {
+    {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
+};
 
 // static const char *write_attr_status_name[] = {
 //     [ESP_ZB_ZCL_STATUS_SUCCESS] = "Success",
