@@ -8,6 +8,7 @@
 #include "Helpers.h"
 #include "aps/esp_zigbee_aps.h"
 #include "zcl/esp_zigbee_zcl_common.h"
+#include "test/esp_zigbee_test_utils.h"
 
 #if !defined CONFIG_ZB_ZCZR
 #error Define ZB_ZCZR in idf.py menuconfig to compile light (Router) source code.
@@ -200,6 +201,7 @@ static void esp_zb_task(void *pcParameters)
     esp_zb_aps_data_confirm_handler_register(esp_zb_aps_data_confirm_handler);
     esp_zb_aps_data_indication_handler_register(zb_apsde_data_indication_handler);
     ESP_ERROR_CHECK(zb_register_device());
+    ESP_ERROR_CHECK(esp_zb_nwk_start_concentrator_mode(5,10));
     esp_zb_secur_link_key_exchange_required_set(true);
     esp_zb_secur_network_min_join_lqi_set(ESP_ZB_SECUR_MIN_LQI);
     esp_zb_set_rx_on_when_idle(true);
