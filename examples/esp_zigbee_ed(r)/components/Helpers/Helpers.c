@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "zcl/esp_zigbee_zcl_common.h"
 #include "switch_driver.h"
+#include "esp_random.h"
 
 static const char *TAG_include = "esp_zigbee_include";
 void create_ping_seq(uint16_t dest_addr, uint32_t seq_num);
@@ -79,7 +80,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
         if(confirm.dst_endpoint == 10) {
             failed_ping_count++;
         }
-        ESP_LOGE("APSDE DATA CONFIRM", "Data confirmation failed, error code: %d", confirm.status);
+        ESP_LOGE("APSDE DATA CONFIRM", "Data confirmation failed, error code: %02x", confirm.status);
     }
 
 }
@@ -197,9 +198,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
 {
     if(button_func_pair->func == SWITCH_ONOFF_TOGGLE_CONTROL) {
         esp_zigbee_include_show_tables();
-        vTaskResume(beacon_task_handle);
-        send_topology_report();
-        esp_zb_bdb_open_network(30);
+        //send_topology_report();
     }
 }
 
@@ -236,17 +235,16 @@ void create_ping_seq(uint16_t dest_addr, uint32_t seq_num)
         ESP_LOGE(TAG, "Failed to allocate memory for ASDU");
         return;
     } 
+    esp_fill_random(req.asdu, data_length);
+
+    //Overwriting part of random data with meaningfull data
     ping_payload.seq_num = seq_num;
     ping_payload.send_time = pdTICKS_TO_MS(xTaskGetTickCount());
     ping_payload.max_ping_count = REPEATS;
-
     uint16_t random_data_offset = 3*sizeof(uint32_t); // Offset to leave space for seq_num, send_time, and max_ping_count
     memcpy(req.asdu, &ping_payload, random_data_offset); // Copy the ping_payload structure into the beginning of the ASDU
-    for (uint16_t i = random_data_offset; i < data_length ; i++) {
-        req.asdu[i] = i % 256; // Fill with some data, e.g., incrementing values
-    }
     
-    //ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %ld bytes", dest_addr, data_length);
+    ESP_LOGI(TAG, "Sending APS data request to 0x%04hx with %ld bytes, number: %ld", dest_addr, data_length, seq_num);
     while(!esp_zb_lock_acquire(portMAX_DELAY))
     {
         vTaskDelay(0); // Wait before retrying
@@ -264,9 +262,11 @@ void beacon_task(void *pvParameters)
     uint32_t i = 0;
     data_to_send_t data;
     beacon_task_handle  = xTaskGetCurrentTaskHandle();
-    
     while (1) {
-        create_ping_seq(DEST_ADDR, i++);
+        if(esp_zb_bdb_dev_joined())
+        {
+            create_ping_seq(DEST_ADDR, i++);
+        }
         vTaskDelay(pdMS_TO_TICKS(DELAY_MS)); 
     }
 }

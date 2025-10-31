@@ -284,7 +284,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
             ping_count++;
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
             increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
-            ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
+            // ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
             send_ping_data(ind.src_short_addr, ping_count, ping->seq_num);
             return true;
         }

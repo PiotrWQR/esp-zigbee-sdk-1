@@ -124,8 +124,8 @@ char* create_json_tables()
         sprintf(long_addr_str, "0x%016" PRIx64, *(uint64_t *)neighbor.ieee_addr);
         cJSON_AddStringToObject(neighbor_item, "ieee_addr", long_addr_str);
         cJSON_AddStringToObject(neighbor_item, "short_addr", dest_addr_str);
-        cJSON_AddNumberToObject(neighbor_item, "device_type", neighbor.device_type);
-        cJSON_AddNumberToObject(neighbor_item, "relationship", neighbor.relationship);
+        //cJSON_AddNumberToObject(neighbor_item, "device_type", neighbor.device_type);
+        //cJSON_AddNumberToObject(neighbor_item, "relationship", neighbor.relationship);
         cJSON_AddNumberToObject(neighbor_item, "depth", neighbor.depth);
         cJSON_AddNumberToObject(neighbor_item, "lqi", neighbor.lqi);
         cJSON_AddNumberToObject(neighbor_item, "outgoing_cost", neighbor.outgoing_cost);
