@@ -534,6 +534,14 @@ void send_ping_data(uint16_t addr, uint32_t ping_num, uint32_t seq_num){
             }
         }
     }
+    itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
+    esp_zb_nwk_route_info_t route = {};
+    while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route))
+    {
+        if(route.dest_addr == addr){
+            cJSON_AddNumberToObject(obj, "route", route.next_hop_addr);
+        }
+    }
     cJSON_AddItemToObject(obj, "information_type", cJSON_CreateNumber(json_info_recived_signal));
     char * json_str = cJSON_PrintUnformatted(obj);
     sendData("Data", json_str);
