@@ -518,17 +518,19 @@ void send_all_data_to_host(const char TAG[]){
     esp_zb_lock_release();
 }
 
-void send_ping_data(uint16_t addr, uint32_t ping_num, uint32_t seq_num){
+void send_ping_data(esp_zb_apsde_data_ind_t * ind, uint32_t ping_num, uint32_t seq_num){
+    printf("Address mode: ");
     cJSON *obj = cJSON_CreateObject();
     cJSON_AddItemToObject(obj, "seq_num", cJSON_CreateNumber(seq_num));
     cJSON_AddItemToObject(obj, "ping_num", cJSON_CreateNumber(ping_num));
-    cJSON_AddItemToObject(obj, "addr", cJSON_CreateNumber(addr));
+    cJSON_AddItemToObject(obj, "addr", cJSON_CreateNumber(ind->src_short_addr));
+    cJSON_AddItemToObject(obj, "lqi", cJSON_CreateNumber(ind->lqi));
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_record_info_t route_record = {};
     cJSON * path = cJSON_AddArrayToObject(obj, "path");
     while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route_record))
     {
-        if(route_record.dest_address == addr){
+        if(route_record.dest_address == ind->dst_short_addr){
             for(uint8_t i=0; i<route_record.relay_count; i++){
                 cJSON_AddItemToArray(path, cJSON_CreateNumber(route_record.path[i]));
             }
@@ -538,7 +540,7 @@ void send_ping_data(uint16_t addr, uint32_t ping_num, uint32_t seq_num){
     esp_zb_nwk_route_info_t route = {};
     while (ESP_OK == esp_zb_nwk_get_next_route(&itor, &route))
     {
-        if(route.dest_addr == addr){
+        if(route.dest_addr == ind->src_short_addr){
             cJSON_AddNumberToObject(obj, "route", route.next_hop_addr);
         }
     }

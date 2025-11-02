@@ -274,7 +274,7 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
             increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
             // ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
-            send_ping_data(ind.src_short_addr, ping_count, ping->seq_num);
+            send_ping_data(&ind, ping_count, ping->seq_num);
             return true;
         }
         if(ind.dst_endpoint==32){
@@ -452,6 +452,7 @@ void button_handler(switch_func_pair_t *button_func_pair)
             .start_index = 0
         };
         //esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
+        esp_zb_zdo_energy_detect_request((1<<24), 3, energy_detect_callback);
 
         
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));

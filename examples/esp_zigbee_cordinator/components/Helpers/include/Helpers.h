@@ -10,12 +10,10 @@
 #define MAX_BACKOFF_RETRIES            5                                   /* Maximum number of backoff retries */
 
 
-
 void helpers_init(void);
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
-
 
 bool deferred_driver_init();
 void esp_zigbee_include_show_tables(void);
