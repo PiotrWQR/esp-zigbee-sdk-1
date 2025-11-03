@@ -1,0 +1,6 @@
+build/
+
+sdkconfig.old
+managed_components/
+managed_components/espressif__esp-zigbee-lib/
+managed_components/espressif__esp-zboss-lib/

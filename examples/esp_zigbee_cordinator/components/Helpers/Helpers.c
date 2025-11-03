@@ -13,6 +13,7 @@
 #include "esp_err.h"
 #include "esp_task_wdt.h"
 #include "cJSON.h"
+#include "uart_interface.h"
 static const char *TAG_include = "Helpers";
 
 static uint32_t byte_counter_in = 0;
@@ -59,35 +60,13 @@ char* short_addr_to_string(uint16_t short_addr) {
     return str;
 }
 
-//ta funkcja ma wyśetlić ile bajtów zostało wysłanych, jednal istnieje problem z nie zawsze oczywistą wielkością nagłówka oraz stylu fragmentacji
-uint16_t request_size(esp_zb_apsde_data_req_t *req) 
-{
-    if (!req) {
-        return 0;
-    }
-    uint16_t size = aps_address_modes_size[req->dst_addr_mode];
 
-    size+= 19; // 19 is the size of the fixed fields in esp_zb_apsde_data_req_t
-    size += req->asdu_length;
-    return size;
-}
 static switch_func_pair_t button_func_pair[] = {
     {GPIO_INPUT_IO_TOGGLE_SWITCH, SWITCH_ONOFF_TOGGLE_CONTROL}
 };
 //Wysłanie ustawień do urządzenia o podanym adresie krótkim - użyte przy potwierdzniu autoryzacji
-void send_settings(uint16_t short_addr){
-    esp_zb_platform_mac_config_t mac_config = {0};
-    esp_zb_platform_mac_config_get(&mac_config);
-    setting_change_t settings = {
-        .new_repeats = repeats,
-        .new_dest_addr = dest_addr,
-        .new_delay_ms = delay_ms,
-        .new_delay_tick = 50,
-        .csma_min_be = mac_config.csma_min_be,
-        .csma_max_be = mac_config.csma_max_be,
-        .csma_max_backoffs = mac_config.csma_max_backoffs,
-        .payload = payload_size
-    };
+void send_settings(uint16_t short_addr, setting_change_t * settings) {
+
     esp_zb_apsde_data_req_t req = {
         .dst_addr_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
         .dst_addr.addr_short = short_addr,
@@ -96,14 +75,15 @@ void send_settings(uint16_t short_addr){
         .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_BASIC,
         .src_endpoint = 30,
         .asdu_length = sizeof(setting_change_t),
-        .asdu = (uint8_t *)&settings,
+        .asdu = (uint8_t *)settings,
         .tx_options = 0,
         .use_alias = false,
         .alias_src_addr = 0,
         .alias_seq_num = 0,
         .radius = 4
     };
-    ESP_LOGI(TAG_include, "Sending settings to 0x%04hx: repeats=%d, dest_addr=0x%04hx, delay_ms=%ld, payload_size=%d", short_addr, settings.new_repeats, settings.new_dest_addr, settings.new_delay_ms, settings.payload);
+    ESP_LOGI(TAG_include, "Sending settings to 0x%04hx:  dest_addr=0x%04hx, delay_ms=%ld, payload_size=%d, tx_power=%d",
+        short_addr, settings->new_dest_addr, settings->new_delay_ms, settings->payload_size, settings->tx_power);
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_aps_data_request(&req);
     esp_zb_lock_release();
@@ -218,20 +198,21 @@ void display_traffic_report()
 
 static void esp_show_route_record_table()
 {
+    const char* TAG = "Route Record Table";
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
     esp_zb_nwk_route_record_info_t route = {};
 
-    ESP_LOGI(TAG_include, "Zigbee Network Routes Records:");
+    ESP_LOGI(TAG, "Zigbee Network Routes Records:");
     while (ESP_OK == esp_zb_nwk_get_next_route_record(&itor, &route)) {
-        ESP_LOGI(TAG_include,"Index: %3d", itor);
-        ESP_LOGI(TAG_include, "  DestAddr: 0x%04hx", route.dest_address);
-        ESP_LOGI(TAG_include, "  Expiry: %4d", route.expiry);
-        ESP_LOGI(TAG_include, "  Relay: %3d", route.relay_count);
+        ESP_LOGI(TAG, "Index: %3d", itor);
+        ESP_LOGI(TAG, "  DestAddr: 0x%04hx", route.dest_address);
+        ESP_LOGI(TAG, "  Expiry: %4d", route.expiry);
+        ESP_LOGI(TAG, "  Relay: %3d", route.relay_count);
         for (size_t i = 0; i < route.relay_count; i++)
         {
-            ESP_LOGI(TAG_include, "  Path node %d: %04hx", i + 1, route.path[i]);
+            ESP_LOGI(TAG, "  Path node %d: %04hx", i + 1, route.path[i]);
         }
-        ESP_LOGI(TAG_include," ");
+        ESP_LOGI(TAG, " ");
     }
 }
 
@@ -292,7 +273,8 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
             ping_count++;
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
             increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
-            ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
+            // ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
+            send_ping_data(&ind, ping_count, ping->seq_num);
             return true;
         }
         if(ind.dst_endpoint==32){
@@ -395,6 +377,20 @@ void esp_zb_zdo_nwk_addr_rsp_callback(esp_zb_zdp_status_t status,  esp_zb_zdo_nw
     }
 }
 
+void energy_detect_callback(esp_zb_zdp_status_t status, uint16_t count, esp_zb_energy_detect_channel_info_t *channel_info)
+{
+    const char *TAG = "ZDO ENERGY DETECT RSP CALLBACK";
+    if (status == ESP_ZB_ZDP_STATUS_SUCCESS) {
+        ESP_LOGI(TAG, "Energy Detect request successful");
+        ESP_LOGI(TAG, "  Channel Number: %d", channel_info->channel_number);
+        ESP_LOGI(TAG, "  Energy (dBm) Number: %d", channel_info->energy_detected);
+        ESP_LOGI(TAG, "  Count: %d", count);
+    } else {
+        ESP_LOGE(TAG, "Energy Detect request failed with status: %d", status);
+    }
+}
+
+
 uint16_t get_neighbor_addr()
 {
     esp_zb_nwk_info_iterator_t itor = ESP_ZB_NWK_INFO_ITERATOR_INIT;
@@ -456,6 +452,9 @@ void button_handler(switch_func_pair_t *button_func_pair)
             .start_index = 0
         };
         //esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
+        esp_zb_zdo_energy_detect_request((1<<24), 3, energy_detect_callback);
+
+        
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
         //send_indicator_toall();
         //display_traffic_report();

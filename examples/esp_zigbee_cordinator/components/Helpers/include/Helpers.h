@@ -10,12 +10,10 @@
 #define MAX_BACKOFF_RETRIES            5                                   /* Maximum number of backoff retries */
 
 
-
 void helpers_init(void);
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind);
 void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm);
-
 
 bool deferred_driver_init();
 void esp_zigbee_include_show_tables(void);
@@ -25,7 +23,6 @@ void send_traffic_report(void);
 void refresh_routes(void);
 void traffic_reporter_init(void *pvParameters);
 void zero_traffic_raport(void);
-void send_settings(uint16_t short_addr);
 char *ieee_addr_to_string(esp_zb_ieee_addr_t ieee_addr);
 char *ieee_addr_uint64_to_string(uint64_t ieee_addr);
 char *short_addr_to_string(uint16_t short_addr);
@@ -94,6 +91,15 @@ static const char * nwk_ind_name[] = {
     [ESP_ZB_NWK_COMMAND_STATUS_BAD_KEY_SEQUENCE_NUMBER]     = "Bad key sequence number", 
     [ESP_ZB_NWK_COMMAND_STATUS_UNKNOWN_COMMAND]             = "Command received is not known",
 };
+
+static const char *addr_mode_name[] ={
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT] = "16 bits, endpoint present",
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT] = "16 bits, group, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT] = "64 bits, endpoint present",
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = "64 bits, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT] = "address not present, endpoint not present",
+};
+
 typedef struct esp_zb_network_traffic_raport_s {
     uint16_t short_addr;      //Short address of the reporting device
     bool is_active;
@@ -126,14 +132,9 @@ typedef struct ping_payload_s {
 } ping_payload_t;
 
 typedef struct {
-    uint16_t new_repeats;
     uint16_t new_dest_addr;
     uint32_t new_delay_ms;      // przerwa miedzy żądaniami dla wysyłania sekwancji pingow przez urządzenie końcowe
-    uint32_t new_delay_tick; // przerwa miedzy żądaniami dla wysyłania sekwancji pingow przez urządzenie końcowe(nieuzywane)
-    uint8_t csma_min_be;        /*!< The minimum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
-    uint8_t csma_max_be;        /*!< The maximum value of the backoff exponent, BE, in the CSMA-CA algorithm. */
-    uint8_t csma_max_backoffs;  /*!< The maximum number of backoff attempts, NB, in the CSMA-CA algorithm. */
-    uint16_t payload;
+    uint16_t payload_size;
     int8_t tx_power;
 } setting_change_t;
 
@@ -161,6 +162,9 @@ typedef struct topology_report_s {
     int16_t routes_count;
     route_info_t routes[10];
 } topology_report_t;
+
+void send_settings(uint16_t short_addr, setting_change_t *settings);
+
 
 //------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------

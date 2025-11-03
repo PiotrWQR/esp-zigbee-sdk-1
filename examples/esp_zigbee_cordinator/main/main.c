@@ -17,6 +17,13 @@
 
 static const char *TAG= "ESP_ZB_COORDINATOR_MAIN";
 
+setting_change_t current_settings = {
+    .new_dest_addr = 0x0000,
+    .new_delay_ms = 2000,
+    .payload_size = 50,
+    .tx_power = 5,
+};
+
 static void bdb_start_top_level_commissioning_cb(uint8_t mode_mask)
 {
     ESP_RETURN_ON_FALSE(esp_zb_bdb_start_top_level_commissioning(mode_mask) == ESP_OK , , TAG, "Failed to start Zigbee commissioning");
@@ -30,7 +37,6 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
     esp_zb_zdo_signal_device_annce_params_t *dev_annce_params = NULL;
     esp_zb_zdo_signal_nwk_status_indication_params_t *nwk_status_params = NULL;
     
-
     switch(sig_type){
     case ESP_ZB_ZDO_SIGNAL_SKIP_STARTUP:
         ESP_LOGI(TAG, "Initialize Zigbee stack");
@@ -106,7 +112,8 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
     case ESP_ZB_NLME_STATUS_INDICATION:
         nwk_status_params = (esp_zb_zdo_signal_nwk_status_indication_params_t *)esp_zb_app_signal_get_params(p_sg_p);
 
-        ESP_LOGI(TAG, "Network status with status: %s, network addr: 0x%04hx, status: %s", esp_err_to_name(err_status), nwk_status_params->network_addr, nwk_ind_name[nwk_status_params->status]);
+        ESP_LOGI(TAG, "Network status with status: %s, network addr: 0x%04hx, status: %s", esp_err_to_name(err_status),
+           nwk_status_params->network_addr, nwk_ind_name[nwk_status_params->status]);
         if (nwk_status_params->status == ESP_ZB_NWK_COMMAND_STATUS_ADDRESS_CONFLICT) {
             ESP_LOGE(TAG, "PAN ID conflict detected, restarting network formation");
             esp_zb_scheduler_alarm((esp_zb_callback_t)bdb_start_top_level_commissioning_cb, ESP_ZB_BDB_MODE_NETWORK_FORMATION, 1000);
@@ -117,7 +124,9 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct)
         ESP_LOGI(TAG, "Device authorized: LongAddr(0x%016" PRIx64 "), ShortAddr(0x%04hx), AuthorizationType(0x%x), AuthorizationStatus(0x%x)",
                  *(uint64_t *)device_authorized_params->long_addr, device_authorized_params->short_addr,
                  device_authorized_params->authorization_type, device_authorized_params->authorization_status);
-                 send_settings(device_authorized_params->short_addr);
+                 
+                 send_settings(device_authorized_params->short_addr, &current_settings);
+        send_all_data_to_host(TAG);
         break;
     case ESP_ZB_ZDO_SIGNAL_LEAVE_INDICATION:
         esp_zb_zdo_signal_leave_indication_params_t *leave_params = (esp_zb_zdo_signal_leave_indication_params_t *)esp_zb_app_signal_get_params(p_sg_p);
@@ -211,9 +220,9 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_zb_platform_config(&config));
     helpers_init();
     ESP_LOGI(TAG, "Starting Zigbee Coordinator example");
-    xTaskCreate(esp_zb_task, "Zigbee_main", 9*1024, NULL, configMAX_PRIORITIES-3, NULL);
+    xTaskCreate(esp_zb_task, "Zigbee_main", 10*1024, NULL, configMAX_PRIORITIES-3, NULL);
     ESP_LOGI(TAG, "Starting UART interface");
     uart_interface_init();
     ESP_LOGI(TAG, "Starting UART RX task");
-    xTaskCreate(rx_task, "uart_rx_task", 4*1024, NULL, configMAX_PRIORITIES-2, NULL);
+    xTaskCreate(rx_task, "uart_rx_task", 5*1024, NULL, configMAX_PRIORITIES-2, NULL);
 }
