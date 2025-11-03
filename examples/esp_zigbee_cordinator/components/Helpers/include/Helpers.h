@@ -91,6 +91,15 @@ static const char * nwk_ind_name[] = {
     [ESP_ZB_NWK_COMMAND_STATUS_BAD_KEY_SEQUENCE_NUMBER]     = "Bad key sequence number", 
     [ESP_ZB_NWK_COMMAND_STATUS_UNKNOWN_COMMAND]             = "Command received is not known",
 };
+
+static const char *addr_mode_name[] ={
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT] = "16 bits, endpoint present",
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT] = "16 bits, group, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT] = "64 bits, endpoint present",
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = "64 bits, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT] = "address not present, endpoint not present",
+};
+
 typedef struct esp_zb_network_traffic_raport_s {
     uint16_t short_addr;      //Short address of the reporting device
     bool is_active;
