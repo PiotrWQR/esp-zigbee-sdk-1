@@ -261,7 +261,7 @@ void update_notify_callback(const esp_zb_zdo_mgmt_update_notify_t *notify, void 
         for(uint8_t i = 0; i <= 26; i++) {
             if(notify->scanned_channels & (1 << i)) {
                 cJSON * channel_item = cJSON_CreateObject();
-                ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
+                //ESP_LOGI(TAG, "Channel %d: Energy %d dBm", i, notify->energy_values[i]);
                 cJSON_AddItemToObject(channel_item, "energy_value", cJSON_CreateNumber(notify->energy_values[i]));
                 cJSON_AddItemToObject(channel_item, "channel", cJSON_CreateNumber(i));
                 cJSON_AddItemToArray(arr, channel_item);
