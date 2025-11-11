@@ -246,7 +246,7 @@ void esp_zb_aps_data_confirm_handler(esp_zb_apsde_data_confirm_t confirm)
 
 bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind) 
 {
-    ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication ");
+    ESP_LOGI("APSDE INDICATION", "Received APSDE-DATA indication");
     bool processed = false;
     if(ind.status == 0x00) {
         byte_counter_in += ind.asdu_length + sizeof(esp_zb_apsde_data_ind_t);
@@ -272,12 +272,13 @@ bool zb_apsde_data_indication_handler(esp_zb_apsde_data_ind_t ind)
         if(ind.dst_endpoint==10){
             ping_count++;
             ping_payload_t *ping = (ping_payload_t *)ind.asdu;
-            increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
+            //increment_traffic_raport(ind.src_short_addr, ping->max_ping_count, ping->seq_num);
             // ESP_LOGI("APSDE INDICATION", "Ping  nr %ld received from 0x%04hx: seq num %ld, send time %ld", ping_count, ind.src_short_addr, ping->seq_num, ping->send_time);
             send_ping_data(&ind, ping_count, ping->seq_num);
             return true;
         }
         if(ind.dst_endpoint==32){
+            return true;
             topology_report_t *topology = (topology_report_t *)ind.asdu;
             ESP_LOGI("APSDE INDICATION TOPOLOGY REPORT", " Topology report received from 0x%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x: neighbor count %d, routes count %d", topology->ieee_addr[7], topology->ieee_addr[6],topology->ieee_addr[5],
             topology->ieee_addr[4],topology->ieee_addr[3],topology->ieee_addr[2],topology->ieee_addr[1],topology->ieee_addr[0]

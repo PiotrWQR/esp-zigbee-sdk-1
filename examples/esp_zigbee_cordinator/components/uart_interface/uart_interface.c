@@ -519,7 +519,7 @@ void send_all_data_to_host(const char TAG[]){
 }
 
 void send_ping_data(esp_zb_apsde_data_ind_t * ind, uint32_t ping_num, uint32_t seq_num){
-    ESP_LOGI("PING DATA", "Address mode: %s", addr_mode_name[ind->dst_addr_mode]);
+    //ESP_LOGI("PING DATA", "Address mode: %s", addr_mode_name[ind->dst_addr_mode]);
     cJSON *obj = cJSON_CreateObject();
     cJSON_AddItemToObject(obj, "seq_num", cJSON_CreateNumber(seq_num));
     cJSON_AddItemToObject(obj, "ping_num", cJSON_CreateNumber(ping_num));
