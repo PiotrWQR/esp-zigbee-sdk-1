@@ -453,8 +453,11 @@ void button_handler(switch_func_pair_t *button_func_pair)
             .start_index = 0
         };
         //esp_zb_zdo_mgmt_lqi_req(&lqi_req, esp_zb_zdo_lqi_rsp_callback, NULL);
-        esp_zb_zdo_energy_detect_request((1<<24), 3, energy_detect_callback);
-
+        for(int8_t i = 11; i < 26; i++){
+            esp_zb_lock_acquire(portMAX_DELAY);
+            esp_zb_zdo_energy_detect_request((1<<i), 3, energy_detect_callback);
+            esp_zb_lock_release();
+        }
         
         ESP_ERROR_CHECK(esp_zb_bdb_open_network(30));
         //send_indicator_toall();

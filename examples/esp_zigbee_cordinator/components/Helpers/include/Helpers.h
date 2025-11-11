@@ -57,10 +57,10 @@ static const char *rel_name[] = {
 };
 //tablica nazw stanów trasy
 static const char *route_state_name[] = {
-    [ESP_ZB_NWK_ROUTE_STATE_ACTIVE] = "Active",
-    [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_UNDERWAY] = "Disc",
-    [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED] = "Fail",
-    [ESP_ZB_NWK_ROUTE_STATE_INACTIVE] = "Inactive",
+    [ESP_ZB_NWK_ROUTE_STATE_ACTIVE]                         = "Active",
+    [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_UNDERWAY]             = "Disc",
+    [ESP_ZB_NWK_ROUTE_STATE_DISCOVERY_FAILED]               = "Fail",
+    [ESP_ZB_NWK_ROUTE_STATE_INACTIVE]                       = "Inactive",
 };
 
 static const char *rx_to_name[] = {
@@ -93,11 +93,11 @@ static const char * nwk_ind_name[] = {
 };
 
 static const char *addr_mode_name[] ={
-    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT] = "16 bits, endpoint present",
-    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT] = "16 bits, group, endpoint not present",
-    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT] = "64 bits, endpoint present",
-    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT] = "64 bits, endpoint not present",
-    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT] = "address not present, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT]                  = "16 bits, endpoint present",
+    [ESP_ZB_APS_ADDR_MODE_16_GROUP_ENDP_NOT_PRESENT]        = "16 bits, group, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_64_ENDP_PRESENT]                  = "64 bits, endpoint present",
+    [ESP_ZB_APS_ADDR_MODE_64_PRESENT_ENDP_NOT_PRESENT]      = "64 bits, endpoint not present",
+    [ESP_ZB_APS_ADDR_MODE_DST_ADDR_ENDP_NOT_PRESENT]        = "address not present, endpoint not present",
 };
 
 typedef struct esp_zb_network_traffic_raport_s {
